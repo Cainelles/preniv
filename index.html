@@ -20,7 +20,15 @@
     <span id="status-update">Aguardando arquivos...</span>
 </header>
 
-
+<div class="card om-card collapsed">
+    <div class="card-header om-header" onclick="toggleCard(this)" style="cursor: pointer;">
+        
+        <h3>Filtrar por Área</h3>
+    </div>
+    <div class="card-body">
+        <div id="area-checkboxes"></div>
+    </div>
+</div>
 
 <!-- Card 2 -->
 <div class="card om-card collapsed">
@@ -106,7 +114,14 @@
     </button>
 </div>
 
+
 <!-- Resultado -->
+ <!-- Botão para Exportar Visão por CT para Excel -->
+<div style="margin: 15px 0; text-align: right;">
+    <button onclick="exportarVisaoCTParaExcel()" style="background-color: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        📊 Baixar Planilha Geral (Visão por CT)
+    </button>
+</div>
 <div id="om-list-container"></div>
 
 <script src="script.js"></script>

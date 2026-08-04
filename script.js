@@ -3,12 +3,14 @@
 // =========================================================================
 
 const COLUNAS_DIARIO = {
-  OM: 1,      // Coluna B
-  CT: 2,      // Coluna C
-  OP: 4,      // Coluna E
-  SUBOP: 5,   // Coluna F
-  TEXTO: 6,   // Coluna G
-  HH: 7       // Coluna H
+  CONF: 0,        // Coluna A
+  OM: 1,          // Coluna B
+  CT: 2,          // Coluna C
+  AREA: 3,        // Coluna D (Área)
+  OP: 4,          // Coluna E
+  SUBOP: 5,       // Coluna F
+  TEXTO: 6,       // Coluna G
+  HH: 7           // Coluna H
 };
 
 const COLUNAS_TEMPO = {
@@ -24,6 +26,7 @@ let recursosPorCT = {};
 let rawDiarioData = [];
 let rawTempoData  = [];
 let ctsSelecionadosParaPorcentagem = new Set();
+let areasSelecionadasParaFiltro = new Set();
 let dadosCruzadosGlobais = [];
 
 let abaAtiva = 'om';
@@ -46,7 +49,6 @@ async function carregarArquivosDaPasta() {
   if (statusBadge) statusBadge.innerText = 'Carregando dados dos arquivos .txt...';
 
   try {
-    // 1. Lê o arquivo do Diário (ex: diario.txt)
     const respostaDiario = await fetch('diario.txt');
     if (!respostaDiario.ok) {
       throw new Error('Não foi possível encontrar o arquivo diario.txt na pasta.');
@@ -54,7 +56,6 @@ async function carregarArquivosDaPasta() {
     const textoDiario = await respostaDiario.text();
     rawDiarioData = textoDiario.split('\n').map(linha => linha.split('\t'));
 
-    // 2. Lê o arquivo de Tempo opcional (ex: tempo.txt)
     try {
       const respostaTempo = await fetch('tempo.txt');
       if (respostaTempo.ok) {
@@ -119,12 +120,14 @@ function processarDadosDinamico(diario, tempo) {
     const r = diario[i];
     if (!Array.isArray(r)) continue;
 
-    const ordem      = String(r[COLUNAS_DIARIO.OM] || '').trim();
-    const ct         = String(r[COLUNAS_DIARIO.CT] || '').trim();
-    const op         = String(r[COLUNAS_DIARIO.OP] || '').trim();
-    const subOp      = String(r[COLUNAS_DIARIO.SUBOP] || '').trim();
-    const textoBreve = String(r[COLUNAS_DIARIO.TEXTO] || '').trim();
-    const hhFallback = parseFloat(r[COLUNAS_DIARIO.HH]) || 0;
+    const ordem       = String(r[COLUNAS_DIARIO.OM] || '').trim();
+    const confirmacao = String(r[COLUNAS_DIARIO.CONF] || '').trim();
+    const ct          = String(r[COLUNAS_DIARIO.CT] || '').trim();
+    const area        = String(r[COLUNAS_DIARIO.AREA] || 'N/A').trim();
+    const op          = String(r[COLUNAS_DIARIO.OP] || '').trim();
+    const subOp       = String(r[COLUNAS_DIARIO.SUBOP] || '').trim();
+    const textoBreve  = String(r[COLUNAS_DIARIO.TEXTO] || '').trim();
+    const hhFallback  = parseFloat(r[COLUNAS_DIARIO.HH]) || 0;
 
     if (!ordem || ordem.toLowerCase().includes('ordem') || ordem.toLowerCase().includes('om')) {
       continue;
@@ -135,7 +138,9 @@ function processarDadosDinamico(diario, tempo) {
 
     tarefas.push({
       ordem,
+      confirmacao,
       ct,
+      area,
       operacao: op,
       subOperacao: subOp,
       textoBreve,
@@ -149,10 +154,11 @@ function processarDadosDinamico(diario, tempo) {
 }
 
 // =========================================================================
-// 5. INTERFACE DADOS E CONTROLES
+// 5. INTERFACE DADOS E CONTROLES (CTs E ÁREAS)
 // =========================================================================
 function inicializarFiltrosEInputs(tarefas) {
   const todosCTs = [...new Set(tarefas.map(t => t.ct).filter(Boolean))].sort();
+  const todasAreas = [...new Set(tarefas.map(t => t.area).filter(Boolean))].sort();
 
   todosCTs.forEach(ct => {
     if (recursosPorCT[ct] === undefined) {
@@ -160,6 +166,11 @@ function inicializarFiltrosEInputs(tarefas) {
     }
   });
 
+  if (areasSelecionadasParaFiltro.size === 0) {
+    todasAreas.forEach(a => areasSelecionadasParaFiltro.add(a));
+  }
+
+  // Renderizar Checkboxes de CTs
   const chkContainer = document.getElementById('ct-checkboxes');
   if (chkContainer) {
     let html = `
@@ -184,6 +195,31 @@ function inicializarFiltrosEInputs(tarefas) {
     chkContainer.innerHTML = html;
   }
 
+  // Renderizar Checkboxes de Áreas
+  const areaContainer = document.getElementById('area-checkboxes');
+  if (areaContainer) {
+    let htmlArea = `
+      <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+        <button type="button" onclick="selecionarTodasAreas(true)" style="padding:5px 10px; font-size:0.8rem; cursor:pointer;">Marcar Todas</button>
+        <button type="button" onclick="selecionarTodasAreas(false)" style="padding:5px 10px; font-size:0.8rem; cursor:pointer;">Desmarcar Todas</button>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+    `;
+
+    todasAreas.forEach(area => {
+      const checked = areasSelecionadasParaFiltro.has(area) ? 'checked' : '';
+      htmlArea += `
+        <label style="background:#fff; padding:6px 12px; border-radius:6px; border:1px solid #ccc; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" value="${area}" ${checked} onchange="toggleAreaSelecao('${area}', this.checked)">
+          <strong>${area}</strong>
+        </label>
+      `;
+    });
+
+    htmlArea += `</div>`;
+    areaContainer.innerHTML = htmlArea;
+  }
+
   renderizarInputsRecursos();
 }
 
@@ -194,7 +230,7 @@ function renderizarInputsRecursos() {
   resContainer.innerHTML = '';
 
   if (ctsSelecionadosParaPorcentagem.size === 0) {
-    resContainer.innerHTML = `<div style="color:#777; font-size:0.85rem; font-style:italic;">Abra o Card 3 e selecione os CTs para definir a quantidade de pessoas.</div>`;
+    resContainer.innerHTML = `<div style="color:#777; font-size:0.85rem; font-style:italic;">Abra o Card de CTs e selecione os centros de trabalho para definir a quantidade de pessoas.</div>`;
     return;
   }
 
@@ -231,6 +267,25 @@ function toggleCTSelecao(ct, checked) {
     ctsSelecionadosParaPorcentagem.delete(ct);
   }
   renderizarInputsRecursos();
+  recalcularTudo();
+}
+
+function selecionarTodasAreas(marcar) {
+  areasSelecionadasParaFiltro.clear();
+  const checkboxes = document.querySelectorAll('#area-checkboxes input[type="checkbox"]');
+  checkboxes.forEach(chk => {
+    chk.checked = marcar;
+    if (marcar) areasSelecionadasParaFiltro.add(chk.value);
+  });
+  recalcularTudo();
+}
+
+function toggleAreaSelecao(area, checked) {
+  if (checked) {
+    areasSelecionadasParaFiltro.add(area);
+  } else {
+    areasSelecionadasParaFiltro.delete(area);
+  }
   recalcularTudo();
 }
 
@@ -290,10 +345,15 @@ function recalcularTudo() {
   const diasUteis   = inputDias  ? parseFloat(inputDias.value)  || 5 : 5;
   const horasPorPessoa = horasPorDia * diasUteis;
 
+  // REGRA FLEXÍVEL DE ÁREA: Se nenhuma estiver marcada, considera todas (não obriga o filtro)
+  const tarefasFiltradasPorArea = (areasSelecionadasParaFiltro.size === 0) 
+    ? dadosCruzadosGlobais 
+    : dadosCruzadosGlobais.filter(t => areasSelecionadasParaFiltro.has(t.area));
+
   const omsMap = {};
   const ctsMap = {};
 
-  dadosCruzadosGlobais.forEach(t => {
+  tarefasFiltradasPorArea.forEach(t => {
     const hhCalculado = (t.trabalho && t.trabalho > 0) ? t.trabalho : (t.executantes * t.hh);
 
     if (!omsMap[t.ordem]) {
@@ -348,7 +408,7 @@ function renderizarResumosPorCT(resumosPorCT) {
   if (resumosPorCT.length === 0) {
     container.innerHTML = `
       <div style="grid-column: 1 / -1; background:#fff3cd; color:#856404; padding:15px; border-radius:8px; border:1px solid #ffeeba; text-align:center;">
-        <strong>Nenhum CT selecionado.</strong> Abra o card "3. Filtrar CTs" e marque as opções desejadas para visualizar o cálculo individual.
+        <strong>Nenhum CT selecionado.</strong> Marque as opções desejadas para visualizar o cálculo individual.
       </div>
     `;
     return;
@@ -422,7 +482,7 @@ function renderizarMensagemAguardando() {
 }
 
 // -------------------------------------------------------------------------
-// VISÃO 1: AGRUPADO POR OM (ORDEM CORRIGIDA)
+// VISÃO 1: AGRUPADO POR OM
 // -------------------------------------------------------------------------
 function renderizarListaOMs(listaOMs) {
   const container = document.getElementById('om-list-container');
@@ -484,6 +544,7 @@ function renderizarListaOMs(listaOMs) {
 
       linhasTarefasHTML += `
         <tr ${estiloLinha}>
+          <td>${t.area}</td>
           <td>${t.operacao}</td>
           <td>${t.subOperacao}</td>
           <td><strong>${t.ct}</strong> ${estaNoCalculo ? '✔' : ''}</td>
@@ -512,6 +573,7 @@ function renderizarListaOMs(listaOMs) {
         <table>
           <thead>
             <tr>
+              <th>Área</th>
               <th>Operação</th>
               <th>SubOp.</th>
               <th>Centro Trabalho</th>
@@ -528,6 +590,74 @@ function renderizarListaOMs(listaOMs) {
 
     container.appendChild(card);
   });
+}
+
+// =========================================================================
+// EXPORTAR DADOS FILTRADOS PARA EXCEL
+// =========================================================================
+function exportarVisaoCTParaExcel() {
+  if (!dadosCruzadosGlobais || dadosCruzadosGlobais.length === 0) {
+    alert('Não há dados carregados para exportar.');
+    return;
+  }
+
+  // Se houver áreas desmarcadas, filtra por elas. Se não houver nenhuma marcada, exporta todas.
+  const dadosFiltrados = dadosCruzadosGlobais.filter(t => {
+    const passaCT = ctsSelecionadosParaPorcentagem.has(t.ct);
+    const passaArea = (areasSelecionadasParaFiltro.size === 0) || areasSelecionadasParaFiltro.has(t.area);
+    return passaCT && passaArea;
+  });
+
+  if (dadosFiltrados.length === 0) {
+    alert('Nenhum dado encontrado com os filtros atuais para exportação.');
+    return;
+  }
+
+  const dadosParaPlanilha = [];
+
+  const dadosOrdenados = [...dadosFiltrados].sort((a, b) => {
+    if (a.ct !== b.ct) return a.ct.localeCompare(b.ct);
+    if (a.ordem !== b.ordem) return a.ordem.localeCompare(b.ordem);
+    return (a.confirmacao || '').localeCompare(b.confirmacao || '');
+  });
+
+  dadosOrdenados.forEach(t => {
+    const hhTotal = (t.trabalho && t.trabalho > 0) ? t.trabalho : (t.executantes * t.hh);
+
+    dadosParaPlanilha.push({
+      "Centro de Trabalho (CT)": t.ct,
+      "Área": t.area,
+      "Ordem (OM)": t.ordem,
+      "Confirmação": t.confirmacao || '',
+      "Operação": t.operacao,
+      "Suboperação": t.subOperacao,
+      "Texto Breve": t.textoBreve,
+      "Executantes": t.executantes,
+      "HH Unitário": t.hh,
+      "Trabalho Total (HH)": parseFloat(hhTotal.toFixed(1))
+    });
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(dadosParaPlanilha);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Tarefas Filtradas");
+
+  const colWidths = [
+    { wch: 20 }, // CT
+    { wch: 15 }, // Área
+    { wch: 15 }, // OM
+    { wch: 15 }, // Confirmação
+    { wch: 12 }, // Operação
+    { wch: 12 }, // Suboperação
+    { wch: 35 }, // Texto Breve
+    { wch: 12 }, // Executantes
+    { wch: 12 }, // HH Unitário
+    { wch: 20 }  // Trabalho Total
+  ];
+  worksheet['!cols'] = colWidths;
+
+  const dataAtual = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(workbook, `Tarefas_Filtradas_CT_Area_${dataAtual}.xlsx`);
 }
 
 // -------------------------------------------------------------------------
@@ -559,7 +689,16 @@ function renderizarListaCTs(ctsMap, horasPorPessoa) {
     const estaSelecionado = ctsSelecionadosParaPorcentagem.has(ctName);
     const qtdPessoas = recursosPorCT[ctName] !== undefined ? recursosPorCT[ctName] : 1;
     const capCT = qtdPessoas * horasPorPessoa;
-    const ocupacaoCT = capCT > 0 ? ((ctInfo.totalHH / capCT) * 100).toFixed(1) : 0;
+    
+    const tarefasCTFiltradas = (areasSelecionadasParaFiltro.size === 0)
+      ? ctInfo.tarefas
+      : ctInfo.tarefas.filter(t => areasSelecionadasParaFiltro.has(t.area));
+
+    const totalHHFiltrado = tarefasCTFiltradas.reduce((acc, t) => {
+      return acc + ((t.trabalho && t.trabalho > 0) ? t.trabalho : (t.executantes * t.hh));
+    }, 0);
+
+    const ocupacaoCT = capCT > 0 ? ((totalHHFiltrado / capCT) * 100).toFixed(1) : 0;
 
     const { cor, textoStatus } = obterEstiloBarraProgresso(parseFloat(ocupacaoCT));
     const badgeStatus = estaSelecionado 
@@ -567,11 +706,12 @@ function renderizarListaCTs(ctsMap, horasPorPessoa) {
       : `<span style="background:#f5f5f5; color:#888; border:1px solid #ccc; padding:3px 8px; border-radius:12px; font-size:0.75rem;">Fora do Filtro</span>`;
 
     let linhasTarefasHTML = '';
-    ctInfo.tarefas.forEach(t => {
+    tarefasCTFiltradas.forEach(t => {
       const hhTotal = (t.trabalho && t.trabalho > 0) ? t.trabalho : (t.executantes * t.hh);
       linhasTarefasHTML += `
         <tr>
           <td><strong>${t.ordem}</strong></td>
+          <td>${t.area}</td>
           <td>${t.operacao}</td>
           <td>${t.subOperacao}</td>
           <td>${t.textoBreve}</td>
@@ -589,8 +729,7 @@ function renderizarListaCTs(ctsMap, horasPorPessoa) {
           CT: ${ctName} ${estaSelecionado ? '✔' : ''}
         </div>
         <div class="om-ct-summary" style="display:flex; gap:15px; align-items:center;">
-          <span style="font-size:0.85rem; color:#444;">OMs: <strong>${ctInfo.omsContadas.size}</strong></span>
-          <span style="font-size:0.85rem; color:#444;">Demanda: <strong>${ctInfo.totalHH.toFixed(1)} h</strong></span>
+          <span style="font-size:0.85rem; color:#444;">Demanda: <strong>${totalHHFiltrado.toFixed(1)} h</strong></span>
           ${badgeStatus}
         </div>
       </div>
@@ -599,6 +738,7 @@ function renderizarListaCTs(ctsMap, horasPorPessoa) {
           <thead>
             <tr>
               <th>OM</th>
+              <th>Área</th>
               <th>Operação</th>
               <th>SubOp.</th>
               <th>Texto Breve</th>
