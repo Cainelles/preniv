@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Painel de Capacidade</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+<header>
+    <h1>Painel de Capacidade</h1>
+    <span id="status-update">Aguardando arquivos...</span>
+</header>
+
+
+
+<!-- Card 2 -->
+<div class="card om-card collapsed">
+    <div class="card-header om-header" onclick="toggleCard(this)" style="cursor: pointer;">
+        <div class="om-title">
+            <span class="arrow-icon">▶</span>
+            <h2>2. Jornada de Trabalho</h2>
+        </div>
+    </div>
+    <div class="card-body om-body">
+        <label for="hours-per-day">Horas por dia</label>
+        <input
+            id="hours-per-day"
+            type="number"
+            value="8.8"
+            step="0.1"
+            onchange="recalcularTudo()">
+
+        <br><br>
+
+        <label for="work-days">Dias úteis</label>
+        <input
+            id="work-days"
+            type="number"
+            value="5"
+            onchange="recalcularTudo()">
+    </div>
+</div>
+
+<!-- Card 3: Filtrar CTs -->
+<div class="card om-card collapsed">
+    <div class="card-header om-header" onclick="toggleCard(this)" style="cursor: pointer;">
+        <div class="om-title">
+            <span class="arrow-icon">▶</span>
+            <h2>3. Filtrar CTs</h2>
+        </div>
+    </div>
+    <div class="card-body om-body">
+        <div id="ct-checkboxes"></div>
+    </div>
+</div>
+
+<!-- Card 4: Recurso -->
+<div class="card om-card collapsed">
+    <div class="card-header om-header" onclick="toggleCard(this)" style="cursor: pointer;">
+        <div class="om-title">
+            <span class="arrow-icon">▶</span>
+            <h2>4. Recurso (Executantes por CT)</h2>
+        </div>
+    </div>
+    <div class="card-body om-body">
+        <div id="ct-resources-container"></div>
+    </div>
+</div>
+
+<!-- Card 5 -->
+<div class="card om-card">
+    <div class="card-header om-header" onclick="toggleCard(this)" style="cursor: pointer;">
+        <div class="om-title">
+            <span class="arrow-icon">▶</span>
+            <h2>5. Resumo da Capacidade</h2>
+        </div>
+    </div>
+    <div class="card-body om-body">
+        <div id="capacity-summary-container"></div>
+    </div>
+</div>
+
+<!-- Abas -->
+<div class="tabs">
+    <button
+        id="btn-aba-om"
+        class="tab-btn active"
+        onclick="alternarAba('om')">
+        Visão por OM
+    </button>
+
+    <button
+        id="btn-aba-ct"
+        class="tab-btn"
+        onclick="alternarAba('ct')">
+        Visão por CT
+    </button>
+</div>
+
+<!-- Resultado -->
+<div id="om-list-container"></div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
