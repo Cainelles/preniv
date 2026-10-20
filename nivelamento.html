@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nivelamento</title>
+  <link rel="stylesheet" href="nivelamento.css">
+</head>
+<body>
+<header class="topo">
+  <div class="topo-conteudo">
+    <div class="marca-bloco">
+      <span class="marca-icone" aria-hidden="true"></span>
+      <div>
+        <h1>Nivelamento</h1>
+        <p class="subtitulo">Acompanhamento diário das ordens e tarefas</p>
+      </div>
+    </div>
+    <div class="topo-direita">
+      <a class="voltar" href="index.html">Início</a>
+      <p id="semana" class="semana">Carregue a pasta para começar</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="painel" aria-labelledby="t-arquivos">
+    <div class="painel-cab">
+      <h2 id="t-arquivos">Planilhas</h2>
+      <p class="ajuda">Selecione a pasta Acompanhamento diario que contém as planilhas.</p>
+    </div>
+
+    <div class="arquivos">
+      <label class="arquivo" id="card-pasta">
+        <span class="arquivo-icone" aria-hidden="true"></span>
+        <span class="arquivo-info">
+          <span class="arquivo-nome">Selecionar pasta</span>
+          <span class="arquivo-desc">Carrega as planilhas automaticamente</span>
+          <span class="arquivo-estado" data-estado>Clique para escolher a pasta</span>
+        </span>
+        <input type="file" id="seletor-pasta" webkitdirectory directory multiple>
+      </label>
+    </div>
+
+    <div class="config">
+      <label for="modo-conf">Tarefa confirmada quando</label>
+      <select id="modo-conf">
+        <option value="status">o status do sistema ou do usuário contém CONF</option>
+        <option value="sistema">o status do sistema contém CONF</option>
+        <option value="confirmacao">a coluna Confirmação estiver preenchida</option>
+      </select>
+    </div>
+
+    <p id="aviso" class="aviso" role="alert" hidden></p>
+  </section>
+
+  <section id="inicio" class="inicio">
+    <p class="inicio-titulo">Nada para mostrar ainda</p>
+    <p>Escolha a pasta que contém diario e tarefas para ver as ordens e as tarefas.</p>
+  </section>
+
+  <div id="resultado" hidden>
+    <section id="barra-acoes" class="painel">
+      <div class="filtros">
+     
+      </div>
+    </section>
+
+    <section id="duplicadas" class="painel">
+      <details id="painel-duplicadas">
+        <summary><strong>Verificação de duplicadas</strong> <span class="badge"></span></summary>
+        <div id="duplicadas-conteudo"></div>
+      </details>
+    </section>
+
+    <section id="tags" class="painel">
+      <details id="painel-tags">
+        <summary><strong>TAGs repetidas entre ordens</strong> <span id="tags-badge" class="badge"></span></summary>
+        <div class="painel-cab">
+          <p class="ajuda">Mostra quando a mesma TAG aparece em ordens diferentes que estão nivelando e se o serviço parece o mesmo ou diferente.</p>
+        </div>
+
+        <div class="filtros">
+          <label>Procurar a TAG em
+            <select id="fonte-tag">
+              <option value="titulo">Título da ordem</option>
+              <option value="local">Localização da tarefa</option>
+              <option value="texto">Texto da operação</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="tags-resumo"></div>
+        <div id="tags-lista"></div>
+      </details>
+    </section>
+
+    <section id="nivelando-ct" class="painel">
+      <details id="painel-nivelando-ct">
+        <summary><strong>Nivelando por centro de trabalho</strong> <span id="nivct-badge" class="badge"></span></summary>
+        <div id="nivct-conteudo"></div>
+      </details>
+    </section>
+
+    <section id="ocupacao" class="painel">
+      <details id="painel-ocupacao">
+        <summary><strong>Ocupação da semana</strong> <span id="ocupacao-badge" class="badge"></span></summary>
+        <div id="ocupacao-conteudo"></div>
+      </details>
+    </section>
+
+    <section class="painel" aria-labelledby="t-tarefas">
+      <div class="painel-cab">
+        <h2 id="t-tarefas">Tarefas por ordem</h2>
+        <div class="legenda" aria-label="Legenda de cores">
+          <span class="legenda-item"><span class="amostra verde"></span>Nivelando</span>
+          <span class="legenda-item"><span class="amostra cinza"></span>Confirmada</span>
+          <span class="legenda-item"><span class="amostra branca"></span>Pendente</span>
+        </div>
+      </div>
+
+      <div class="resumo" id="resumo"></div>
+
+      <div class="filtros">
+        <label>Busca
+          <input type="search" id="busca" placeholder="Ordem, texto ou CT">
+        </label>
+        <label>Centro de trabalho
+          <select id="filtro-ct"><option value="">Todos</option></select>
+        </label>
+        <label>Situação
+          <select id="filtro-sit">
+            <option value="">Todas</option>
+            <option value="verde">Nivelando (verde)</option>
+            <option value="cinza">Confirmadas (cinza)</option>
+            <option value="branca">Pendentes (branca)</option>
+          </select>
+        </label>
+        <label>Área
+          <select id="filtro-area">
+            <option value="">Todas</option>
+            <option value="14">014</option>
+            <option value="18">018</option>
+            <option value="19">019</option>
+          </select>
+        </label>
+        <label class="check" title="Mostra ordens que têm ao menos uma tarefa nivelando">
+          <input type="checkbox" id="so-nivelando"> Ordens nivelando
+        </label>
+        <label class="check">
+          <input type="checkbox" id="so-dup"> Só duplicadas
+        </label>
+        <div class="acoes">
+          <button type="button" class="botao" id="abrir-todas">Abrir todas</button>
+          <button type="button" class="botao" id="fechar-todas">Fechar todas</button>
+        </div>
+      </div>
+
+      <div class="tabela-wrap">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th>Op.</th><th>Sub</th><th>CT</th><th>Texto da operação</th>
+              <th>Executantes</th><th>Duração</th><th>Planejado</th><th>Real</th>
+              <th>Status sistema</th><th>Restrição</th><th>1ª início</th><th>1ª fim</th><th>Situação</th>
+            </tr>
+          </thead>
+          <tbody id="corpo"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+  if (typeof XLSX === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+  }
+</script>
+<script src="nivelamento.js"></script>
+</body>
+</html>
