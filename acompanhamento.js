@@ -145,7 +145,7 @@
   function conectar() {
     Sync.conectar(state.semana, (t) => { state.estado = t; patchTudo(); }, (s) => {
       const el = $('sync-estado');
-      el.textContent = { online: 'Tempo real ativo', local: 'Modo local', reconectando: 'Reconectando…', erro: 'Erro de conexão' }[s] || s;
+      el.textContent = { online: 'Tempo real ativo', polling: 'Online (atualiza a cada 4 s)', local: 'Modo local', reconectando: 'Reconectando…', erro: 'Erro de conexão' }[s] || s;
       el.className = 'chip-status ' + s;
     });
   }
@@ -287,6 +287,21 @@
 
   $('sala').addEventListener('change', () => { Sync.setSala($('sala').value); $('sala').value = Sync.sala(); if (state.semana) conectar(); });
   $('nome').addEventListener('change', () => Sync.setNome($('nome').value));
+
+  /* diagnóstico da conexão assim que a página abre (antes de carregar as planilhas) */
+  const chip = (texto, cls) => { $('sync-estado').textContent = texto; $('sync-estado').className = 'chip-status ' + cls; };
+  Sync.testar().then((r) => {
+    if (state.semana) return;               /* já conectou após carregar as planilhas */
+    if (r.local) return chip('Modo local (sem Firebase)', 'local');
+    if (r.ok) return chip('Banco conectado · carregue a pasta', 'online');
+    const msg = {
+      regras: ['Firebase recusou o acesso', 'O Firebase bloqueou o acesso. No console, em Realtime Database > Regras, publique as regras do acompanhamento.'],
+      url: ['URL do Firebase incorreta', 'A URL do Firebase no script.js não foi reconhecida. Confira o endereço do Realtime Database.'],
+      rede: ['Sem acesso ao Firebase', 'Não consegui falar com o Firebase. Verifique a internet ou se a rede da empresa bloqueia firebaseio.com.']
+    }[r.motivo] || ['Erro no Firebase', 'O Firebase respondeu com erro: ' + r.motivo];
+    chip(msg[0], 'erro');
+    mostrarAviso(msg[1]);
+  });
 
   /* carrega sozinho a pasta escolhida na página inicial */
   Pasta.ler().then((p) => {

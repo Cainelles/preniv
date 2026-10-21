@@ -12,7 +12,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-ap
 .voltar:hover{background:rgba(255,255,255,.15)}
 main{max-width:1280px;margin:0 auto;padding:24px}
 .chip-status{font-size:.8rem;padding:4px 12px;border-radius:99px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4)}
-.chip-status.online{background:var(--ok)}.chip-status.reconectando{background:var(--warn)}.chip-status.erro{background:var(--err)}
+.chip-status.online,.chip-status.polling{background:var(--ok)}.chip-status.reconectando{background:var(--warn)}.chip-status.erro{background:var(--err)}
 .hero h2{margin:8px 0 6px;font-size:1.6rem}.hero p{margin:0 0 22px;color:var(--mut);max-width:680px}
 .cartoes-home{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
 .cartao-home{display:flex;flex-direction:column;gap:14px;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:26px;color:inherit;text-decoration:none;box-shadow:var(--sh);transition:transform .15s,border-color .15s}

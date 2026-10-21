@@ -10,7 +10,7 @@ const Sync = (() => {
   const limpa = (s) => String(s).trim().replace(/[.$#[\]/\s]+/g, '_');
   const sala = () => limpa(lerLS(LS.sala) || 'geral');
   const nome = () => lerLS(LS.nome);
-  let tree = {}, base = '', es = null, cbData = () => {}, cbStatus = () => {};
+  let tree = {}, base = '', es = null, poll = null, espera = null, cbData = () => {}, cbStatus = () => {};
 
   /* grava valor numa posição da árvore local (null apaga) */
   function setIn(obj, parts, val) {
@@ -21,7 +21,10 @@ const Sync = (() => {
     return Object.keys(obj).length ? obj : null;
   }
 
-  function desconectar() { if (es) { es.close(); es = null; } }
+  function desconectar() {
+    if (es) { es.close(); es = null; }
+    clearInterval(poll); clearTimeout(espera);
+  }
 
   function conectar(semana, onData, onStatus) {
     desconectar();
@@ -33,9 +36,29 @@ const Sync = (() => {
       onStatus('local'); onData(tree);
       return;
     }
+    /* modo alternativo: se a conexão contínua não abrir (firewall/proxy), consulta o banco a cada 4 s */
+    const iniciarPolling = () => {
+      if (es) { es.close(); es = null; }
+      clearInterval(poll); clearTimeout(espera);
+      const buscar = async () => {
+        try {
+          const r = await fetch(`${FIREBASE_URL}/${base}.json`, { cache: 'no-store' });
+          if (!r.ok) throw new Error(r.status);
+          tree = (await r.json()) || {};
+          onStatus('polling'); onData(tree);
+        } catch (e) { onStatus('erro'); }
+      };
+      buscar();
+      poll = setInterval(buscar, 4000);
+    };
+    let abriu = false;
     es = new EventSource(`${FIREBASE_URL}/${base}.json`);
-    es.addEventListener('open', () => onStatus('online'));
-    es.addEventListener('error', () => onStatus('reconectando'));
+    espera = setTimeout(() => { if (!abriu) iniciarPolling(); }, 8000);
+    es.addEventListener('open', () => { abriu = true; clearTimeout(espera); onStatus('online'); });
+    es.addEventListener('error', () => {
+      if (!abriu && es && es.readyState === 2) iniciarPolling();   /* recusada (ex.: regras) */
+      else onStatus('reconectando');
+    });
     es.addEventListener('cancel', () => onStatus('erro'));
     es.addEventListener('auth_revoked', () => onStatus('erro'));
     const aplicar = (ev, mescla) => {
@@ -64,8 +87,18 @@ const Sync = (() => {
     } catch (e) { cbStatus('erro'); }
   }
 
+  /* teste rápido de acesso ao banco: { ok } ou { ok:false, motivo: 'regras' | 'url' | 'rede' | 'http NNN' } */
+  async function testar() {
+    if (!FIREBASE_URL) return { ok: true, local: true };
+    try {
+      const r = await fetch(`${FIREBASE_URL}/acompanhamento/${sala()}.json?shallow=true`, { cache: 'no-store' });
+      if (r.ok) return { ok: true };
+      return { ok: false, motivo: r.status === 401 || r.status === 403 ? 'regras' : r.status === 404 ? 'url' : 'http ' + r.status };
+    } catch (e) { return { ok: false, motivo: 'rede' }; }
+  }
+
   return {
-    configurado: !!FIREBASE_URL, limpa, sala, nome, conectar, atualizar,
+    configurado: !!FIREBASE_URL, limpa, sala, nome, conectar, atualizar, testar,
     setSala: (v) => gravaLS(LS.sala, limpa(v)), setNome: (v) => gravaLS(LS.nome, String(v).trim())
   };
 })();
@@ -188,6 +221,10 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('sync-status');
   if (!el) return;
-  el.textContent = Sync.configurado ? 'Tempo real ativo' : 'Modo local (sem sincronização)';
-  el.classList.add(Sync.configurado ? 'online' : 'local');
+  if (!Sync.configurado) { el.textContent = 'Modo local (sem sincronização)'; el.classList.add('local'); return; }
+  Sync.testar().then((r) => {
+    const msg = { regras: 'Firebase recusou (regras)', url: 'URL do Firebase incorreta', rede: 'Sem acesso ao Firebase' };
+    el.textContent = r.ok ? 'Tempo real disponível' : (msg[r.motivo] || 'Erro no Firebase (' + r.motivo + ')');
+    el.classList.add(r.ok ? 'online' : 'erro');
+  });
 });
