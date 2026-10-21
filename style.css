@@ -101,3 +101,68 @@ tr.grupo td{padding:0;background:var(--card);border-bottom:1px solid var(--bd)}t
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:10px 18px;border-radius:99px;box-shadow:var(--sh);z-index:50}
 .chips-ct{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.chips-ct .chip button{border:0;background:none;cursor:pointer;color:var(--mut);margin-left:4px;font:inherit}
 .grupo-titulo{display:flex;align-items:baseline;flex-wrap:wrap}.tag-tarefas .tx{flex:1}.tag-tarefas .vazio-li{color:var(--mut)}
+
+/* ===== Seleção de ordens para copiar ===== */
+.grupo-linha{display:flex;align-items:center}
+.sel-ordem{flex:none;display:flex;flex-direction:row;align-items:center;justify-content:center;padding:0 6px 0 14px;cursor:pointer}
+.sel-ordem input{width:20px;height:20px;accent-color:var(--pri);cursor:pointer}
+.grupo-linha .abre{flex:1;min-width:0}
+.grupo-titulo strong{user-select:text;-webkit-user-select:text}
+
+/* ===== Responsivo (celular e tablet) ===== */
+html{-webkit-text-size-adjust:100%}
+img,svg{max-width:100%}
+@media (max-width:900px){
+  main{padding:16px 12px}
+  .topo{padding:14px 12px}
+  .cartoes-home{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  body{font-size:14px}
+  .topo h1{font-size:1.15rem}
+  .topo-conteudo,.topo-direita{gap:8px}
+  .painel{padding:12px;border-radius:12px}
+  .painel-cab{flex-direction:column;align-items:flex-start}
+
+  /* campos maiores (16px evita o zoom automático do iOS) e fáceis de tocar */
+  input[type=text],input[type=search],input[type=number],select,.campo{font-size:16px;min-height:42px;width:100%}
+  .oc-in{width:90px}
+  .linha-campos,.filtros,.config{flex-direction:column;align-items:stretch;gap:10px}
+  .filtros label,.linha-campos label,.config label{width:100%}
+  .check{flex-direction:row;min-height:36px}
+  .check input{width:20px;height:20px}
+
+  /* botões em grade */
+  .acoes{margin-left:0;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .botao{min-height:42px;padding:8px 10px}
+  .botao.pequeno{min-height:36px}
+
+  /* resumo em 2 colunas */
+  .resumo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .cartao{min-width:0}
+  .cartao.grande{grid-column:1/-1}
+
+  /* cabeçalho da ordem */
+  .abre{padding:10px 8px;gap:8px;align-items:flex-start}
+  .grupo-contagem{display:none}
+  .grupo-titulo{flex-direction:column;align-items:flex-start;gap:2px}
+  .grupo-nome{margin-left:0}
+  .sel-ordem{padding:0 2px 0 10px}
+
+  /* tabelas rolam na horizontal */
+  .tabela-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 4px 8px}
+  table{font-size:13px}
+  th,td{padding:6px}
+  .texto{min-width:180px}
+
+  /* TAGs, abas, acompanhamento */
+  .tag-ordens{grid-template-columns:1fr}
+  .abas{overflow-x:auto;white-space:nowrap}
+  .aba{padding:9px 12px}
+  .grupo-card summary{flex-wrap:wrap;padding:10px 12px}
+  .grupo-card summary .barra{width:100%;order:9}
+  .campo{min-width:130px}
+  .oc-cel{min-width:150px}
+  .btn-conf{min-height:40px}
+  .toast{max-width:90vw;text-align:center}
+}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nivelamento</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <header class="topo">
@@ -68,6 +68,9 @@
     <section id="barra-acoes" class="painel">
       <div class="filtros">
         <div class="acoes">
+          <button type="button" class="botao" id="sel-todas">Marcar todas do filtro</button>
+          <button type="button" class="botao" id="limpar-sel">Limpar marcação</button>
+          <button type="button" class="botao" id="copiar-oms-sel">Copiar marcadas (<span id="qtd-sel">0</span>)</button>
           <button type="button" class="botao" id="copiar-oms-niv">Copiar OMs nivelando</button>
           <button type="button" class="botao" id="gerar-excel">Gerar Excel completo</button>
         </div>
@@ -187,7 +190,7 @@
     document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
   }
 </script>
-<script src="script.js?v=5"></script>
-<script src="nivelamento.js?v=2"></script>
+<script src="script.js?v=7"></script>
+<script src="nivelamento.js?v=3"></script>
 </body>
 </html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestão de carteira</title>
+  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="carteira.css?v=1">
+</head>
+<body>
+
+<!-- ===== Login ===== -->
+<div id="login" class="login">
+  <form id="login-form" class="login-card" autocomplete="off">
+    <h1>Gestão de carteira</h1>
+    <p id="login-info" class="ajuda">Digite a sua chave de acesso.</p>
+
+    <label>Chave
+      <input type="text" id="login-chave" maxlength="12" autocapitalize="characters" spellcheck="false" placeholder="ex.: AB12">
+    </label>
+    <button type="button" id="login-trocar" class="link" hidden>Trocar chave</button>
+
+    <label id="campo-senha" hidden>Senha
+      <input type="password" id="login-senha" autocomplete="current-password">
+    </label>
+    <label id="campo-confirma" hidden>Repita a senha
+      <input type="password" id="login-confirma" autocomplete="new-password">
+    </label>
+
+    <p id="login-erro" class="aviso" role="alert" hidden></p>
+    <button type="submit" id="login-btn" class="botao primario">Continuar</button>
+    <a class="link" href="index.html">← Voltar ao início</a>
+  </form>
+</div>
+
+<!-- ===== Aplicação ===== -->
+<header class="topo">
+  <div class="topo-conteudo">
+    <div class="marca-bloco">
+      <span class="marca-icone" aria-hidden="true"></span>
+      <div>
+        <h1>Gestão de carteira</h1>
+        <p class="subtitulo">Ordens e operações em aberto</p>
+      </div>
+    </div>
+    <div class="topo-direita">
+      <a class="voltar" href="index.html">Início</a>
+      <span id="usuario" class="chip-status" hidden></span>
+      <button type="button" id="sair" class="voltar sair" hidden>Sair</button>
+    </div>
+  </div>
+</header>
+
+<main id="app" hidden>
+  <section class="painel">
+    <div class="linha-campos">
+      <label class="arquivo" id="card-pasta">
+        <span class="arquivo-info">
+          <span class="arquivo-nome">Selecionar pasta</span>
+          <span class="arquivo-estado" data-estado>Precisa do opcart.xlsx e do omcart.xlsx</span>
+        </span>
+        <input type="file" id="seletor-pasta" webkitdirectory directory multiple>
+      </label>
+      <p class="ajuda">As planilhas chegam sozinhas da nuvem. Escolher a pasta aqui é opcional e atualiza para todos.</p>
+    </div>
+    <p id="aviso" class="aviso" role="alert" hidden></p>
+  </section>
+
+  <section id="inicio" class="inicio">
+    <p class="inicio-titulo">Nada para mostrar ainda</p>
+    <p>Escolha a pasta que contém opcart e omcart.</p>
+  </section>
+
+  <div id="resultado" hidden>
+    <section class="painel">
+      <div class="resumo" id="resumo"></div>
+
+      <div class="filtros">
+        <label>Busca
+          <input type="search" id="busca" placeholder="Ordem, nota ou texto">
+        </label>
+        <label>Área
+          <select id="filtro-area">
+            <option value="">Todas</option>
+            <option value="14">014</option>
+            <option value="18">018</option>
+            <option value="19">019</option>
+            <option value="ct">Só pelo CT (outra área)</option>
+          </select>
+        </label>
+        <label>Centro de trabalho
+          <select id="filtro-ct"><option value="">Todos</option></select>
+        </label>
+        <label>Status do sistema
+          <select id="filtro-st"><option value="">Todos</option></select>
+        </label>
+        <label>Ordenar por
+          <select id="ordenar">
+            <option value="ordem">Número da ordem</option>
+            <option value="inicio">Início base</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="escopo" checked> Só áreas 014, 018, 019 e meus CTs
+        </label>
+        <div class="acoes">
+          <button type="button" class="botao" id="copiar-oms">Copiar OMs</button>
+          <button type="button" class="botao" id="gerar-excel">Gerar Excel</button>
+          <button type="button" class="botao" id="abrir-todas">Abrir todas</button>
+          <button type="button" class="botao" id="fechar-todas">Fechar todas</button>
+        </div>
+      </div>
+      <p class="ajuda" id="escopo-info"></p>
+    </section>
+
+    <div id="lista"></div>
+  </div>
+</main>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+  if (typeof XLSX === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+  }
+</script>
+<script src="script.js?v=7"></script>
+<script src="carteira.js?v=1"></script>
+</body>
+</html>

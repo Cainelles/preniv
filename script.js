@@ -132,7 +132,7 @@ const Sync = (() => {
 
 /* ---- Pasta compartilhada: lê as planilhas uma vez e guarda no navegador (IndexedDB) ---- */
 const Pasta = (() => {
-  const NOMES = ['diario', 'tarefas', 'ordens', 'atual'];
+  const NOMES = ['diario', 'tarefas', 'ordens', 'atual', 'opcart', 'omcart'];
   const abrir = () => new Promise((res, rej) => {
     const r = indexedDB.open('nivelamento-db', 1);
     r.onupgradeneeded = () => r.result.createObjectStore('kv');
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
     estado.textContent = 'Lendo planilhas…';
     try {
       const { dados, achados } = await Pasta.lerArquivos(arquivos);
-      if (!achados.length) { msg('Não encontrei diario, tarefas, ordens ou atual (.xlsx) nessa pasta.'); estado.textContent = 'Nada encontrado'; return; }
+      if (!achados.length) { msg('Não encontrei diario, tarefas, ordens, atual, opcart ou omcart (.xlsx) nessa pasta.'); estado.textContent = 'Nada encontrado'; return; }
       const faltam = ['diario', 'tarefas', 'atual'].filter((k) => !dados[k]);
       if (faltam.length) msg(`Atenção: não encontrei ${faltam.join(', ')} na pasta.`);
       estado.textContent = Sync.configurado ? 'Enviando para a nuvem…' : 'Guardando…';

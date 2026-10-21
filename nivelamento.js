@@ -16,6 +16,7 @@
     dados: { diario: null, ordens: null, tarefas: null, atual: null },
     modelo: null, abertas: new Set(), tagsAbertas: new Set(), ctAbertos: new Set(), cap: null
   };
+  state.selecionadas = new Map(); /* chave normalizada da ordem -> número da ordem (marcadas para copiar) */
   const $ = (id) => document.getElementById(id);
 
   /* Regras de planejador (ajuste os nomes aqui, se precisar) */
@@ -491,13 +492,14 @@
         (nDup ? `<span class="mini" title="Duplicadas"><span class="amostra dup"></span>${nDup}</span>` : '') +
         `<span class="total">${ts.length} ${ts.length === 1 ? 'tarefa' : 'tarefas'}</span>`;
 
-      html += `<tr class="grupo" data-i="${i}" data-k="${esc(g)}"><td colspan="13">` +
+      html += `<tr class="grupo" data-i="${i}" data-k="${esc(g)}"><td colspan="13"><div class="grupo-linha">` +
+        `<label class="sel-ordem" title="Marcar para copiar"><input type="checkbox" data-sel="${esc(g)}" data-ordem="${esc(ts[0].ordem)}"${state.selecionadas.has(g) ? ' checked' : ''}></label>` +
         `<button type="button" class="abre" aria-expanded="${aberta}" aria-label="Abrir ou fechar a ordem ${esc(ts[0].ordem)}">` +
         `<span class="chevron" aria-hidden="true"></span>${prio}` +
         `<span class="grupo-texto"><span class="grupo-titulo"><strong>Ordem ${esc(ts[0].ordem)}</strong>` +
         `${o && o.titulo ? `<span class="grupo-nome">${esc(o.titulo)}</span>` : ''}</span>` +
         `<span class="chips">${chips}</span></span>` +
-        `<span class="grupo-contagem">${contagem}</span></button></td></tr>`;
+        `<span class="grupo-contagem">${contagem}</span></button></div></td></tr>`;
 
       ts.forEach((t) => {
         const restr = [t.restricao, t.restData].filter(Boolean).join(' ');
@@ -512,6 +514,7 @@
       });
     });
     corpo.innerHTML = html;
+    atualizarSel();
   }
 
   /* ---------- Nivelando por centro de trabalho ---------- */
@@ -951,6 +954,8 @@
 
   /* Abrir e fechar ordens */
   $('corpo').addEventListener('click', (ev) => {
+    if (ev.target.closest('.sel-ordem')) return;            /* clique na caixinha não abre/fecha */
+    if (String(window.getSelection()).trim()) return;        /* está selecionando texto: não abre/fecha */
     const cab = ev.target.closest('tr.grupo');
     if (!cab) return;
     const k = cab.dataset.k;
@@ -1029,6 +1034,34 @@
     salvarCap();
     pintarOcupacao();
   });
+
+  /* Marcar ordens para copiar */
+  function atualizarSel() {
+    const el = $('qtd-sel');
+    if (el) el.textContent = state.selecionadas.size;
+  }
+
+  $('corpo').addEventListener('change', (ev) => {
+    const c = ev.target.closest('[data-sel]');
+    if (!c) return;
+    if (c.checked) state.selecionadas.set(c.dataset.sel, c.dataset.ordem);
+    else state.selecionadas.delete(c.dataset.sel);
+    atualizarSel();
+  });
+
+  $('sel-todas').addEventListener('click', () => {
+    if (!state.modelo) return;
+    linhasFiltradas().forEach((t) => state.selecionadas.set(numNorm(t.ordem), t.ordem));
+    renderTabela();
+  });
+
+  $('limpar-sel').addEventListener('click', () => {
+    state.selecionadas.clear();
+    if (state.modelo) renderTabela(); else atualizarSel();
+  });
+
+  $('copiar-oms-sel').addEventListener('click', () =>
+    copiarOMs([...state.selecionadas.values()].map((ordem) => ({ ordem })), 'marcadas'));
 
   $('gerar-excel').addEventListener('click', gerarExcel);
   $('copiar-oms').addEventListener('click', () => { if (state.modelo) copiarOMs(linhasFiltradas(), 'filtro da tabela'); });
