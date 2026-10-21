@@ -169,6 +169,7 @@
         if (encontrados[tipo]) dadosNovos[tipo] = await lerPlanilha(encontrados[tipo]);
       }
       state.dados = dadosNovos;
+      if (typeof Pasta !== 'undefined') Pasta.salvar(dadosNovos).catch(() => {});
 
       estado.textContent = Object.keys(nomes)
         .map((tipo) => encontrados[tipo] ? `${tipo}: ${dadosNovos[tipo].length} linhas` : `${tipo}: não encontrada`)
@@ -951,6 +952,18 @@
     renderTags();
     $('t-tarefas').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+
+  /* carrega sozinho a pasta escolhida na página inicial */
+  if (typeof Pasta !== 'undefined') {
+    Pasta.ler().then((p) => {
+      if (!p || !p.dados.diario || !p.dados.tarefas) return;
+      state.dados = p.dados;
+      const card = $('card-pasta');
+      card.querySelector('[data-estado]').textContent = `Pasta carregada ${Pasta.rotulo(p.quando)}. Clique para escolher outra.`;
+      card.classList.add('ok');
+      processar();
+    });
+  }
 
   /* Ocupação: digitar executantes/horas recalcula na hora e salva no navegador */
   $('ocupacao-conteudo').addEventListener('input', (ev) => {

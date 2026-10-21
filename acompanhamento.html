@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acompanhamento diário</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topo">
+  <div class="topo-conteudo">
+    <div class="marca-bloco">
+      <span class="marca-icone" aria-hidden="true"></span>
+      <div>
+        <h1>Acompanhamento diário</h1>
+        <p class="subtitulo" id="semana">Carregue a pasta para começar</p>
+      </div>
+    </div>
+    <div class="topo-direita">
+      <a class="voltar" href="index.html">Início</a>
+      <span id="sync-estado" class="chip-status">Sem conexão</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="painel">
+    <div class="linha-campos">
+      <label class="arquivo" id="card-pasta">
+        <span class="arquivo-info">
+          <span class="arquivo-nome">Selecionar pasta</span>
+          <span class="arquivo-estado" data-estado>Precisa do atual.xlsx (ordens.xlsx é opcional)</span>
+        </span>
+        <input type="file" id="seletor-pasta" webkitdirectory directory multiple>
+      </label>
+      <label>Sala (igual nos dois computadores)
+        <input type="text" id="sala" placeholder="ex.: caldeiraria-2026">
+      </label>
+      <label>Seu nome
+        <input type="text" id="nome" placeholder="quem está confirmando">
+      </label>
+    </div>
+    <p id="aviso" class="aviso" role="alert" hidden></p>
+  </section>
+
+  <section id="inicio" class="inicio">
+    <p class="inicio-titulo">Nada para mostrar ainda</p>
+    <p>Escolha a pasta que contém a planilha atual.</p>
+  </section>
+
+  <div id="resultado" hidden>
+    <section class="painel">
+      <div class="resumo" id="resumo"></div>
+      <div class="filtros">
+        <label>Busca <input type="search" id="busca" placeholder="Ordem, texto ou CT"></label>
+        <label>Centro <select id="filtro-centro"></select></label>
+        <label>Área
+          <select id="filtro-area">
+            <option value="">Todas</option><option value="14">014</option>
+            <option value="18">018</option><option value="19">019</option>
+          </select>
+        </label>
+        <label>Dia <select id="filtro-dia"></select></label>
+        <label>Situação
+          <select id="filtro-sit">
+            <option value="">Todas</option><option value="pend">Pendentes</option><option value="conf">Confirmadas</option>
+          </select>
+        </label>
+        <div class="acoes">
+          <button type="button" class="botao" id="abrir-todas">Abrir todas</button>
+          <button type="button" class="botao" id="fechar-todas">Fechar todas</button>
+        </div>
+      </div>
+      <div class="abas" role="tablist">
+        <button type="button" class="aba ativa" data-aba="ordem">Por ordem</button>
+        <button type="button" class="aba" data-aba="area">Por área</button>
+        <button type="button" class="aba" data-aba="centro">Por centro</button>
+      </div>
+    </section>
+    <div id="lista"></div>
+  </div>
+</main>
+
+<datalist id="motivos">
+  <option value="Falta de material"><option value="Falta de pessoal"><option value="Aguardando liberação">
+  <option value="Prioridade alterada"><option value="Chuva / clima"><option value="Retrabalho"><option value="Outro">
+</datalist>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+  if (typeof XLSX === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+  }
+</script>
+<script src="script.js"></script>
+<script src="acompanhamento.js"></script>
+</body>
+</html>

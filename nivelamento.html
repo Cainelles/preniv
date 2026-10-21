@@ -27,7 +27,7 @@
   <section class="painel" aria-labelledby="t-arquivos">
     <div class="painel-cab">
       <h2 id="t-arquivos">Planilhas</h2>
-      <p class="ajuda">Selecione a pasta Acompanhamento diario que contém as planilhas.</p>
+      <p class="ajuda">Selecione a pasta Acompanhamento diario que contém as planilhas (ou escolha uma vez na página inicial).</p>
     </div>
 
     <div class="arquivos">
@@ -62,7 +62,9 @@
   <div id="resultado" hidden>
     <section id="barra-acoes" class="painel">
       <div class="filtros">
-     
+        <div class="acoes">
+          <button type="button" class="botao" id="gerar-excel">Gerar Excel (nivelando)</button>
+        </div>
       </div>
     </section>
 
@@ -178,6 +180,7 @@
     document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
   }
 </script>
+<script src="script.js"></script>
 <script src="nivelamento.js"></script>
 </body>
 </html>

@@ -1,105 +1,76 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Acompanhamento diário</title>
-<link rel="stylesheet" href="style.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejamento · Início</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-
 <header class="topo">
   <div class="topo-conteudo">
     <div class="marca-bloco">
       <span class="marca-icone" aria-hidden="true"></span>
       <div>
-        <h1>Acompanhamento diário</h1>
-        <p class="subtitulo">Planejamento</p>
+        <h1>Planejamento</h1>
+        <p class="subtitulo">Nivelamento e acompanhamento diário</p>
       </div>
     </div>
-    <p id="hoje" class="data-hoje"></p>
+    <span id="sync-status" class="chip-status">Verificando…</span>
   </div>
 </header>
 
 <main>
-  <h2 class="titulo-secao">Escolha uma aba</h2>
+  <section class="hero">
+    <h2>O que você quer fazer hoje?</h2>
+    <p>Escolha uma das ferramentas abaixo. As planilhas continuam no seu computador; só os apontamentos do acompanhamento são compartilhados em tempo real.</p>
+  </section>
 
-  <div class="abas">
-    <article class="aba">
-      <div class="aba-faixa" aria-hidden="true"></div>
-      <div class="aba-corpo">
-        <h3>Nivelamento</h3>
-        <p>Veja o que está nivelando, o que já foi confirmado e o que ainda está pendente,
-          ordem por ordem, e descubra se há tarefas duplicadas na semana atual.</p>
+  <section class="painel">
+    <div class="linha-campos">
+      <label class="arquivo" id="card-pasta">
+        <span class="arquivo-info">
+          <span class="arquivo-nome">Selecionar pasta das planilhas</span>
+          <span class="arquivo-estado" data-estado>Escolha uma vez aqui e as outras páginas carregam sozinhas</span>
+        </span>
+        <input type="file" id="seletor-pasta-home" webkitdirectory directory multiple>
+      </label>
+      <button type="button" class="botao" id="limpar-pasta" hidden>Limpar</button>
+    </div>
+    <p id="aviso" class="aviso" role="alert" hidden></p>
+  </section>
 
-        <ul class="legenda-home" aria-label="Cores usadas">
-          <li><span class="amostra verde"></span>Nivelando</li>
-          <li><span class="amostra cinza"></span>Confirmada</li>
-          <li><span class="amostra branca"></span>Pendente</li>
-        </ul>
+  <section class="cartoes-home">
+    <a class="cartao-home" href="nivelamento.html">
+      <span class="cartao-icone" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg>
+      </span>
+      <span class="cartao-texto">
+        <strong>Nivelamento</strong>
+        <span>Ordens e tarefas do diário, duplicadas, TAGs repetidas, ocupação por centro e exportação para Excel.</span>
+      </span>
+      <span class="cartao-seta" aria-hidden="true">Abrir →</span>
+    </a>
 
-        <p class="planilhas-rotulo">Planilhas usadas</p>
-        <div class="chips">
-          <span class="chip">diario.xlsx</span>
-          <span class="chip">tarefas.xlsx</span>
-          <span class="chip">ordens.xlsx</span>
-          <span class="chip">atual.xlsx</span>
-        </div>
-      </div>
-      <div class="aba-rodape">
-        <a class="botao-principal" href="nivelamento.html">Abrir nivelamento</a>
-      </div>
-    </article>
-
-    <div class="abas">
-    <article class="aba">
-      <div class="aba-faixa" aria-hidden="true"></div>
-      <div class="aba-corpo">
-        <h3>Acompanhamento diario</h3>
-        <p>Acompanhar justificativa e apropriação das tarefas niveladas na semana atual</p>
-
-        <ul class="legenda-home" aria-label="Cores usadas">
-          <li><span class="amostra verde"></span>Apropriações</li>
-          <li><span class="amostra verde"></span>Justificativas</li>
-        </ul>
-
-        <p class="planilhas-rotulo">Planilhas usadas</p>
-        <div class="chips">
-          <span class="chip">diario.xlsx</span>
-          <span class="chip">tarefas.xlsx</span>
-          <span class="chip">ordens.xlsx</span>
-          <span class="chip">atual.xlsx</span>
-        </div>
-      </div>
-      <div class="aba-rodape">
-        <a class="botao-principal" href="index.html">Ainda não concluido</a>
-      </div>
-    </article>
-
-       <div class="abas">
-    <article class="aba">
-      <div class="aba-faixa" aria-hidden="true"></div>
-      <div class="aba-corpo">
-        <h3>Filtros rápidos</h3>
-        <p>Faça o acompanhamento e gestão da carteira diretamente no SAP, utilizando o SAPscript para facilitar, automatizar e unificar os processos e filtros utilizados pela equipe TE/UT</p>
-
-        <br></br>
-        <br></br>
-        <br></br>
-        <br></br>
-    
-      <div class="aba-rodape">
-        <a class="botao-principal" href="filtros.html">Abrir filtros</a>
-</div>
-        
-      </div>
-    </article>
-  </div>
+    <a class="cartao-home destaque" href="acompanhamento.html">
+      <span class="cartao-icone" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11"/></svg>
+      </span>
+      <span class="cartao-texto">
+        <strong>Acompanhamento diário</strong>
+        <span>Veja a planilha atual por ordem, área ou centro, registre justificativa e motivo e marque CONFIRMADO, em conjunto com o seu colega.</span>
+      </span>
+      <span class="cartao-seta" aria-hidden="true">Abrir →</span>
+    </a>
+  </section>
 </main>
 
-
+<script src="xlsx.full.min.js"></script>
+<script>
+  if (typeof XLSX === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+  }
+</script>
 <script src="script.js"></script>
 </body>
 </html>
