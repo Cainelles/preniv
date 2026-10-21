@@ -169,7 +169,7 @@
         if (encontrados[tipo]) dadosNovos[tipo] = await lerPlanilha(encontrados[tipo]);
       }
       state.dados = dadosNovos;
-      if (typeof Pasta !== 'undefined') Pasta.salvar(dadosNovos).catch(() => {});
+      if (typeof Pasta !== 'undefined') Pasta.aplicar(dadosNovos, false).catch((e) => mostrarAviso('Dados carregados, mas não enviei para a nuvem: ' + e.message));
 
       estado.textContent = Object.keys(nomes)
         .map((tipo) => encontrados[tipo] ? `${tipo}: ${dadosNovos[tipo].length} linhas` : `${tipo}: não encontrada`)
@@ -271,7 +271,7 @@
 
     /* linhas da tabela: tarefas + tarefas do diario que não estão em tarefas */
     const T = COL.tarefas;
-    const linhas = [];
+    let linhas = [];
     const chavesTarefas = new Set();
     tarefas.forEach((r) => {
       const k = chave(r[T.ordem], r[T.op], r[T.sub]);
@@ -325,6 +325,11 @@
       const g = numNorm(t.ordem);
       t.area = (mapaOrdens.get(g) || {}).area || areaAlt.get(g) || '';
     });
+
+    /* escopo: só OMs com os meus CTs e áreas 014, 018 e 019 */
+    const totalAntes = linhas.length;
+    if ($('escopo').checked) linhas = filtrarEscopo(linhas, { ordem: (t) => numNorm(t.ordem), ct: (t) => t.ct, area: (t) => t.area });
+    $('escopo-info').textContent = $('escopo').checked ? `${linhas.length} de ${totalAntes} tarefas no escopo` : '';
 
 
     state.modelo = { linhas, mapaOrdens, semana, temAtual: !!atual, dupDiarioAtual, dupDentroDiario, chavesDup, mapaDiario };
@@ -544,29 +549,75 @@
       return `<details class="tag-grupo" data-ct="${esc(k)}"${state.ctAbertos.has(k) ? ' open' : ''}>` +
         `<summary><span class="tag-nome">${esc(g.nome)}</span><span class="tag-qtd">${g.tarefas.length} tarefa(s)</span>` +
         `<span class="selo niv">${esc(fmtHH(g.hh))}</span></summary>` +
-        '<div class="tag-corpo"><div class="tabela-wrap"><table><thead><tr><th>Ordem</th><th>Op.</th>' +
+        `<div class="tag-corpo"><p><button type="button" class="botao pequeno" data-copiar-ct="${esc(k)}">Copiar OMs deste CT</button></p><div class="tabela-wrap"><table><thead><tr><th>Ordem</th><th>Op.</th>` +
         '<th>Texto da operação</th><th>Executantes</th><th>Duração</th><th>HH</th></tr></thead>' +
         `<tbody>${linhas}</tbody></table></div></div></details>`;
     }).join('');
   }
 
+  /* ---------- Copiar OMs ---------- */
+  function avisoRapido(t) {
+    const d = document.createElement('div');
+    d.className = 'toast';
+    d.textContent = t;
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 2500);
+  }
+
+  async function copiarOMs(ts, rotulo) {
+    const oms = [...new Set(ts.map((t) => t.ordem).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+    if (!oms.length) { avisoRapido('Nenhuma OM para copiar.'); return; }
+    const texto = oms.join('\n');
+    try { await navigator.clipboard.writeText(texto); } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    avisoRapido(`${oms.length} OM(s) copiada(s) · ${rotulo}`);
+  }
+
   /* ---------- Excel ---------- */
   const arred = (n, casas = 1) => Math.round(n * 10 ** casas) / 10 ** casas;
 
-  function gerarExcel() {
+  async function gerarExcel() {
     const m = state.modelo;
     if (!m) return;
     if (typeof XLSX === 'undefined') { mostrarAviso('Biblioteca XLSX não carregou.'); return; }
-    const verdes = state.modelo.linhas.filter((t) => t.cat === 'verde')
-      .sort((a, b) => a.ct.localeCompare(b.ct) || a.ordem.localeCompare(b.ordem, 'pt-BR', { numeric: true }));
-    if (!verdes.length) { mostrarAviso('Não há tarefas nivelando para exportar com esse filtro.'); return; }
     mostrarAviso('');
 
-    const cab = ['Área', 'Ordem', 'Título da ordem', 'CT', 'Op.', 'Sub', 'Texto da operação',
-      'Executantes', 'Duração', 'Planejado', 'HH considerado', 'Fonte do HH', 'Início', 'Fim', 'Duplicada'];
-    const aba1 = [cab].concat(verdes.map((t) => [
-      t.area, t.ordem, (m.mapaOrdens.get(numNorm(t.ordem)) || {}).titulo || '', t.ct, t.op, t.sub, t.texto,
-      t.execN || '', t.duracaoN || '', t.planejadoN || '', arred(hhTarefa(t), 2), hhInfo(t).fonte, t.ini, t.fim, t.dup ? 'Sim' : 'Não']));
+    /* confirmações feitas no Acompanhamento diário (semana da planilha atual) */
+    let acomp = {};
+    if (m.semana) {
+      const s = m.semana.ini;
+      acomp = await Sync.lerAcomp(`${s.getFullYear()}-${doisDig(s.getMonth() + 1)}-${doisDig(s.getDate())}`);
+    }
+    const rotSit = { verde: 'Nivelando', cinza: 'Confirmada', branca: 'Pendente' };
+    const cab = ['Situação', 'Área', 'Ordem', 'Título da ordem', 'Local', 'CT', 'Op.', 'Sub', 'Texto da operação', 'Executantes',
+      'Duração', 'Planejado', 'Real', 'HH considerado', 'Fonte do HH', 'Status usuário', 'Status sistema', 'Confirmação (sistema)',
+      'Restrição', 'Data restrição', 'Início', 'Fim', 'Duplicada', 'Acomp.: confirmado', 'Acomp.: por', 'Acomp.: hora',
+      'Acomp.: justificativa', 'Acomp.: motivo'];
+    const larg = [11, 8, 10, 30, 12, 11, 6, 5, 45, 10, 8, 9, 8, 12, 18, 14, 14, 14, 16, 12, 11, 11, 9, 12, 12, 8, 30, 22];
+    const linha = (t) => {
+      const a = acomp[Sync.limpa(t.k)] || {};
+      const i = hhInfo(t);
+      return [rotSit[t.cat], t.area, t.ordem, (m.mapaOrdens.get(numNorm(t.ordem)) || {}).titulo || '', t.local, t.ct, t.op, t.sub,
+        t.texto, t.execN || '', t.duracaoN || '', t.planejadoN || '', t.real, i.h ? arred(i.h, 2) : '', i.fonte, t.stUsuario,
+        t.stSistema, t.conf, t.restricao, t.restData, t.ini, t.fim, t.dup ? 'Sim' : 'Não',
+        a.conf === true ? 'Sim' : '', a.por || '', a.em || '', a.just || '', a.motivo || ''];
+    };
+    const aba = (ts) => {
+      const ws = XLSX.utils.aoa_to_sheet([cab].concat(ts.map(linha)));
+      ws['!cols'] = larg.map((wch) => ({ wch }));
+      return ws;
+    };
+    const ordenar = (ts) => [...ts].sort((a, b) => a.ct.localeCompare(b.ct) || a.ordem.localeCompare(b.ordem, 'pt-BR', { numeric: true }));
+    const todas = ordenar(m.linhas);
+    if (!todas.length) { mostrarAviso('Não há tarefas para exportar.'); return; }
+    const verdes = todas.filter((t) => t.cat === 'verde');
+    const confirmadas = todas.filter((t) => t.cat === 'cinza' || (acomp[Sync.limpa(t.k)] || {}).conf === true);
 
     const porCT = new Map();
     verdes.forEach((t) => {
@@ -595,19 +646,18 @@
     });
 
     const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.aoa_to_sheet(aba1);
-    ws1['!cols'] = [8, 12, 36, 12, 7, 6, 50, 11, 9, 10, 14, 22, 12, 12, 10].map((wch) => ({ wch }));
+    XLSX.utils.book_append_sheet(wb, aba(todas), 'Todas as tarefas');
+    XLSX.utils.book_append_sheet(wb, aba(verdes), 'Nivelando');
+    XLSX.utils.book_append_sheet(wb, aba(confirmadas), 'Confirmadas');
     const ws2 = XLSX.utils.aoa_to_sheet(aba2);
     ws2['!cols'] = [16, 18, 14].map((wch) => ({ wch }));
+    XLSX.utils.book_append_sheet(wb, ws2, 'Por CT');
     const ws3 = XLSX.utils.aoa_to_sheet(aba3);
     ws3['!cols'] = [16, 12, 20, 16, 20, 14, 30].map((wch) => ({ wch }));
-    XLSX.utils.book_append_sheet(wb, ws1, 'Nivelando');
-    XLSX.utils.book_append_sheet(wb, ws2, 'Por CT');
     XLSX.utils.book_append_sheet(wb, ws3, 'Ocupação (todos)');
 
     const h = new Date();
-    const data = `${h.getFullYear()}-${doisDig(h.getMonth() + 1)}-${doisDig(h.getDate())}`;
-    XLSX.writeFile(wb, `nivelamento_${data}.xlsx`);
+    XLSX.writeFile(wb, `nivelamento_${h.getFullYear()}-${doisDig(h.getMonth() + 1)}-${doisDig(h.getDate())}.xlsx`);
   }
 
   /* ---------- Ocupação semanal ---------- */
@@ -953,16 +1003,16 @@
     $('t-tarefas').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  /* carrega sozinho a pasta escolhida na página inicial */
+  /* carrega sozinho as planilhas (neste computador e da nuvem) */
   if (typeof Pasta !== 'undefined') {
-    Pasta.ler().then((p) => {
-      if (!p || !p.dados.diario || !p.dados.tarefas) return;
+    Pasta.carregar((p) => {
+      if (!p.dados.diario || !p.dados.tarefas) return;
       state.dados = p.dados;
       const card = $('card-pasta');
-      card.querySelector('[data-estado]').textContent = `Pasta carregada ${Pasta.rotulo(p.quando)}. Clique para escolher outra.`;
+      card.querySelector('[data-estado]').textContent = `${Pasta.descricao(p)}. Clique para escolher outra pasta.`;
       card.classList.add('ok');
       processar();
-    });
+    }, mostrarAviso);
   }
 
   /* Ocupação: digitar executantes/horas recalcula na hora e salva no navegador */
@@ -981,6 +1031,15 @@
   });
 
   $('gerar-excel').addEventListener('click', gerarExcel);
+  $('copiar-oms').addEventListener('click', () => { if (state.modelo) copiarOMs(linhasFiltradas(), 'filtro da tabela'); });
+  $('copiar-oms-niv').addEventListener('click', () => { if (state.modelo) copiarOMs(state.modelo.linhas.filter((t) => t.cat === 'verde'), 'nivelando'); });
+  $('escopo').addEventListener('change', () => { if (state.dados.diario) processar(); });
+  $('nivct-conteudo').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-copiar-ct]');
+    if (!b || !state.modelo) return;
+    const k = b.dataset.copiarCt;
+    copiarOMs(state.modelo.linhas.filter((t) => t.cat === 'verde' && (ctKey(t.ct) || '(SEM CT)') === k), b.dataset.copiarCt);
+  });
 
   $('nivct-conteudo').addEventListener('toggle', (ev) => {
     const d = ev.target;

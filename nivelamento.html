@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nivelamento</title>
-  <link rel="stylesheet" href="nivelamento.css">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header class="topo">
@@ -27,7 +27,7 @@
   <section class="painel" aria-labelledby="t-arquivos">
     <div class="painel-cab">
       <h2 id="t-arquivos">Planilhas</h2>
-      <p class="ajuda">Selecione a pasta Acompanhamento diario que contém as planilhas (ou escolha uma vez na página inicial).</p>
+      <p class="ajuda">As planilhas chegam sozinhas da nuvem. Escolher a pasta aqui é opcional e atualiza para todos.</p>
     </div>
 
     <div class="arquivos">
@@ -51,6 +51,11 @@
       </select>
     </div>
 
+    <div class="config">
+      <label class="check"><input type="checkbox" id="escopo" checked> Só meus CTs · áreas 014, 018, 019</label>
+      <span class="ajuda" id="escopo-info"></span>
+    </div>
+
     <p id="aviso" class="aviso" role="alert" hidden></p>
   </section>
 
@@ -63,7 +68,8 @@
     <section id="barra-acoes" class="painel">
       <div class="filtros">
         <div class="acoes">
-          <button type="button" class="botao" id="gerar-excel">Gerar Excel (nivelando)</button>
+          <button type="button" class="botao" id="copiar-oms-niv">Copiar OMs nivelando</button>
+          <button type="button" class="botao" id="gerar-excel">Gerar Excel completo</button>
         </div>
       </div>
     </section>
@@ -153,6 +159,7 @@
           <input type="checkbox" id="so-dup"> Só duplicadas
         </label>
         <div class="acoes">
+          <button type="button" class="botao" id="copiar-oms">Copiar OMs do filtro</button>
           <button type="button" class="botao" id="abrir-todas">Abrir todas</button>
           <button type="button" class="botao" id="fechar-todas">Fechar todas</button>
         </div>
@@ -180,7 +187,7 @@
     document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
   }
 </script>
-<script src="script.js?v=3"></script>
+<script src="script.js?v=5"></script>
 <script src="nivelamento.js?v=2"></script>
 </body>
 </html>

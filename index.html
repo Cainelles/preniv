@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Planejamento · Início</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header class="topo">
@@ -23,7 +23,7 @@
 <main>
   <section class="hero">
     <h2>O que você quer fazer hoje?</h2>
-    <p>Escolha uma das ferramentas abaixo. As planilhas continuam no seu computador; só os apontamentos do acompanhamento são compartilhados em tempo real.</p>
+    <p>Escolha uma das ferramentas abaixo. Quem atualiza as planilhas escolhe a pasta uma vez por dia; todos os outros recebem os dados da nuvem automaticamente.</p>
   </section>
 
   <section class="painel">
@@ -31,11 +31,24 @@
       <label class="arquivo" id="card-pasta">
         <span class="arquivo-info">
           <span class="arquivo-nome">Selecionar pasta das planilhas</span>
-          <span class="arquivo-estado" data-estado>Escolha uma vez aqui e as outras páginas carregam sozinhas</span>
+          <span class="arquivo-estado" data-estado>Quem atualiza escolhe a pasta; os demais recebem da nuvem sozinhos</span>
         </span>
         <input type="file" id="seletor-pasta-home" webkitdirectory directory multiple>
       </label>
-      <button type="button" class="botao" id="limpar-pasta" hidden>Limpar</button>
+      <label class="arquivo" id="card-arquivos">
+        <span class="arquivo-info">
+          <span class="arquivo-nome">Ou escolher os arquivos</span>
+          <span class="arquivo-estado">diario, tarefas, ordens e atual (.xlsx)</span>
+        </span>
+        <input type="file" id="seletor-arquivos-home" multiple accept=".xlsx,.xls,.xlsm,.csv">
+      </label>
+      <label>Sala (igual para todos)
+        <input type="text" id="sala-home" placeholder="ex.: caldeiraria-x7k2">
+      </label>
+      <label>Seu nome
+        <input type="text" id="nome-home" placeholder="quem atualiza">
+      </label>
+      <button type="button" class="botao" id="limpar-pasta" hidden>Limpar deste computador</button>
     </div>
     <p id="aviso" class="aviso" role="alert" hidden></p>
   </section>
@@ -71,6 +84,6 @@
     document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
   }
 </script>
-<script src="script.js?v=3"></script>
+<script src="script.js?v=5"></script>
 </body>
 </html>

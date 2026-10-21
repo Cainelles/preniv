@@ -3,6 +3,23 @@
    1) Crie um Realtime Database no Firebase  2) cole a URL abaixo (sem "/" no final). */
 const FIREBASE_URL = 'https://planejamento-9cfd1-default-rtdb.firebaseio.com/'.replace(/\/+$/, ''); // a barra final é removida sozinha
 
+/* Escopo: só OMs que têm os meus CTs e que estão nas áreas 014, 018 ou 019 */
+const ESCOPO = {
+  areas: ['14', '18', '19'],
+  cts: ['AUSETU', 'CALDTU', 'CALDVAZA', 'CALDDSC', 'MANDTU', 'MANDVAZA', 'MANDDSC', 'SOLDADOR', 'SOLDVAZA', 'SOLDDSC', 'AUSEDSC']
+};
+function filtrarEscopo(itens, f, extras) {
+  const norm = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
+  const meus = new Set(ESCOPO.cts.concat(extras || []).map(norm));
+  /* área desconhecida não esconde a ordem */
+  const areaOk = (s) => {
+    const c = (String(s).match(/\d+/g) || []).map((x) => x.replace(/^0+/, '') || '0');
+    return !c.length || c.some((x) => ESCOPO.areas.includes(x));
+  };
+  const ordens = new Set(itens.filter((t) => meus.has(norm(f.ct(t)))).map(f.ordem));
+  return itens.filter((t) => ordens.has(f.ordem(t)) && areaOk(f.area(t)));
+}
+
 const Sync = (() => {
   const LS = { sala: 'nivelamento.sala', nome: 'nivelamento.nome', local: 'nivelamento.local:' };
   const lerLS = (k) => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
@@ -97,8 +114,18 @@ const Sync = (() => {
     } catch (e) { return { ok: false, motivo: 'rede' }; }
   }
 
+  /* leitura única dos apontamentos da semana (para o Excel do nivelamento) */
+  async function lerAcomp(semana) {
+    const caminho = `acompanhamento/${sala()}/${semana}`;
+    if (!FIREBASE_URL) { try { return JSON.parse(lerLS(LS.local + caminho)) || {}; } catch (e) { return {}; } }
+    try {
+      const r = await fetch(`${FIREBASE_URL}/${caminho}.json`, { cache: 'no-store' });
+      return r.ok ? ((await r.json()) || {}) : {};
+    } catch (e) { return {}; }
+  }
+
   return {
-    configurado: !!FIREBASE_URL, limpa, sala, nome, conectar, atualizar, testar,
+    configurado: !!FIREBASE_URL, limpa, sala, nome, conectar, atualizar, testar, lerAcomp,
     setSala: (v) => gravaLS(LS.sala, limpa(v)), setNome: (v) => gravaLS(LS.nome, String(v).trim())
   };
 })();
@@ -123,12 +150,14 @@ const Pasta = (() => {
   };
   const ler = () => tx('readonly', (st) => st.get('pasta')).catch(() => null);
 
-  /* substituir=true troca tudo; senão só atualiza as planilhas informadas */
-  async function salvar(dados, substituir) {
+  /* substituir=true troca tudo; senão só atualiza as planilhas informadas. extra = { versoes, quando, por } */
+  async function salvar(dados, substituir, extra) {
     const antigo = substituir ? null : await ler();
     const d = {};
     NOMES.forEach((k) => { d[k] = dados[k] || (antigo && antigo.dados[k]) || null; });
-    const novo = { dados: d, quando: Date.now() };
+    const e = extra || {};
+    const novo = { dados: d, quando: e.quando || Date.now(), por: e.por || '',
+      versoes: { ...((antigo && antigo.versoes) || {}), ...(e.versoes || {}) } };
     await tx('readwrite', (st) => st.put(novo, 'pasta'));
     return novo;
   }
@@ -172,10 +201,94 @@ const Pasta = (() => {
     return { dados, achados };
   }
 
-  return { ler, salvar, limpar, rotulo, lerArquivos };
+  /* ---- Nuvem: as planilhas ficam no Firebase (compactadas) e todos recebem automaticamente ---- */
+  const raiz = () => `${FIREBASE_URL}/planilhas/${Sync.sala()}`;
+  const trocaData = function (k, v) { const o = this[k]; return o instanceof Date ? '@D:' + o.getTime() : v; };
+  const voltaData = (k, v) => (typeof v === 'string' && v.startsWith('@D:') ? new Date(+v.slice(3)) : v);
+
+  async function http(url, opcoes) {
+    const r = await fetch(url, { cache: 'no-store', ...opcoes });
+    if (r.status === 401 || r.status === 403) throw new Error('o Firebase recusou o acesso às planilhas. Publique as regras novas (bloco "planilhas")');
+    if (!r.ok) throw new Error('o Firebase respondeu ' + r.status);
+    return r.json();
+  }
+
+  async function comprimir(texto) {
+    if (typeof CompressionStream === 'undefined') return { fmt: 'raw', texto };
+    const fluxo = new Blob([texto]).stream().pipeThrough(new CompressionStream('gzip'));
+    const buf = new Uint8Array(await new Response(fluxo).arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    return { fmt: 'gz', texto: btoa(bin) };
+  }
+
+  async function descomprimir(pacote) {
+    if (pacote.fmt !== 'gz') return pacote.texto;
+    if (typeof DecompressionStream === 'undefined') throw new Error('este navegador não descompacta os dados; use um navegador mais novo');
+    const buf = Uint8Array.from(atob(pacote.texto), (c) => c.charCodeAt(0));
+    return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+
+  async function publicar(dados) {
+    const metas = {};
+    for (const nome of NOMES) {
+      if (!dados[nome]) continue;
+      const pacote = await comprimir(JSON.stringify(dados[nome], trocaData));
+      await http(`${raiz()}/dados/${nome}.json`, { method: 'PUT', body: JSON.stringify(pacote) });
+      metas[nome] = { quando: Date.now(), por: Sync.nome(), linhas: dados[nome].length };
+      await http(`${raiz()}/meta/${nome}.json`, { method: 'PUT', body: JSON.stringify(metas[nome]) });
+    }
+    return metas;
+  }
+
+  async function baixar(nome) {
+    const pacote = await http(`${raiz()}/dados/${nome}.json`);
+    return pacote ? JSON.parse(await descomprimir(pacote), voltaData) : null;
+  }
+
+  /* baixa só as planilhas que mudaram na nuvem desde a última vez */
+  async function sincronizar() {
+    const local = await ler();
+    if (!FIREBASE_URL) return { reg: local, mudou: false };
+    const m = (await http(`${raiz()}/meta.json`)) || {};
+    const versoes = (local && local.versoes) || {};
+    const novos = {};
+    const nv = {};
+    for (const nome of NOMES) {
+      if (m[nome] && m[nome].quando !== versoes[nome]) { novos[nome] = await baixar(nome); nv[nome] = m[nome].quando; }
+    }
+    if (!Object.keys(novos).length) return { reg: local, mudou: false };
+    const ultima = Object.values(m).sort((a, b) => b.quando - a.quando)[0];
+    return { reg: await salvar(novos, false, { versoes: nv, quando: ultima.quando, por: ultima.por }), mudou: true };
+  }
+
+  /* mostra o que já está neste computador e depois confere a nuvem */
+  async function carregar(onDados, onAviso) {
+    const local = await ler();
+    if (local) onDados(local);
+    if (!FIREBASE_URL) return;
+    try {
+      const { reg, mudou } = await sincronizar();
+      if (mudou) onDados(reg);
+    } catch (e) { if (onAviso) onAviso('Não consegui buscar as planilhas da nuvem: ' + e.message); }
+  }
+
+  /* guarda neste computador e envia para a nuvem (se configurada) */
+  async function aplicar(dados, substituir) {
+    await salvar(dados, substituir && !FIREBASE_URL);
+    if (!FIREBASE_URL) return ler();
+    const metas = await publicar(dados);
+    const versoes = {};
+    Object.keys(metas).forEach((k) => { versoes[k] = metas[k].quando; });
+    return salvar({}, false, { versoes, quando: Date.now(), por: Sync.nome() });
+  }
+
+  const descricao = (p) => `${FIREBASE_URL ? 'Atualizada' : 'Carregada'} ${rotulo(p.quando)}${p.por ? ' por ' + p.por : ''}`;
+
+  return { ler, salvar, aplicar, carregar, limpar, rotulo, descricao, lerArquivos };
 })();
 
-/* Página inicial: escolher a pasta uma vez e mostrar se a sincronização está ativa */
+/* Página inicial: quem atualiza escolhe a pasta; todos os outros recebem da nuvem */
 document.addEventListener('DOMContentLoaded', () => {
   const sel = document.getElementById('seletor-pasta-home');
   if (!sel) return;
@@ -183,38 +296,64 @@ document.addEventListener('DOMContentLoaded', () => {
   const estado = card.querySelector('[data-estado]');
   const aviso = document.getElementById('aviso');
   const btn = document.getElementById('limpar-pasta');
+  const salaEl = document.getElementById('sala-home');
+  const nomeEl = document.getElementById('nome-home');
+  const padrao = estado.textContent;
   const msg = (t) => { aviso.textContent = t || ''; aviso.hidden = !t; };
+  salaEl.value = Sync.sala();
+  nomeEl.value = Sync.nome();
 
   const mostrar = (p) => {
     if (!p) { btn.hidden = true; return; }
     const achados = Object.keys(p.dados).filter((k) => p.dados[k]).map((k) => `${k}: ${p.dados[k].length} linhas`);
-    estado.textContent = `Carregada ${Pasta.rotulo(p.quando)} · ${achados.join(' | ')}`;
+    estado.textContent = `${Pasta.descricao(p)} · ${achados.join(' | ')}`;
     card.classList.add('ok');
     btn.hidden = false;
   };
-  Pasta.ler().then(mostrar);
+  const iniciar = () => Pasta.carregar(mostrar, msg);
+  iniciar();
 
-  sel.addEventListener('change', async () => {
-    const arquivos = Array.from(sel.files || []);
-    sel.value = '';
+  const escolher = async (input) => {
+    const arquivos = Array.from(input.files || []);
+    input.value = '';
     if (!arquivos.length) return;
-    estado.textContent = 'Carregando planilhas…';
+    msg('');
+    estado.textContent = 'Lendo planilhas…';
     try {
       const { dados, achados } = await Pasta.lerArquivos(arquivos);
       if (!achados.length) { msg('Não encontrei diario, tarefas, ordens ou atual (.xlsx) nessa pasta.'); estado.textContent = 'Nada encontrado'; return; }
       const faltam = ['diario', 'tarefas', 'atual'].filter((k) => !dados[k]);
-      msg(faltam.length ? `Atenção: não encontrei ${faltam.join(', ')}. As páginas que dependem deles não vão carregar.` : '');
-      mostrar(await Pasta.salvar(dados, true));
-    } catch (e) { msg('Erro ao carregar a pasta: ' + e.message); estado.textContent = 'Erro ao ler'; }
-  });
+      if (faltam.length) msg(`Atenção: não encontrei ${faltam.join(', ')} na pasta.`);
+      estado.textContent = Sync.configurado ? 'Enviando para a nuvem…' : 'Guardando…';
+      mostrar(await Pasta.aplicar(dados, true));
+    } catch (e) {
+      msg('Erro: ' + e.message + (Sync.configurado ? '. Se a pasta foi lida, os dados ficaram só neste computador.' : ''));
+      estado.textContent = 'Erro ao enviar';
+      Pasta.ler().then(mostrar);
+    }
+  };
+  sel.addEventListener('change', () => escolher(sel));
+  const selArq = document.getElementById('seletor-arquivos-home');
+  if (selArq) selArq.addEventListener('change', () => escolher(selArq));
 
   btn.addEventListener('click', async () => {
     await Pasta.limpar();
     card.classList.remove('ok');
-    estado.textContent = 'Escolha uma vez aqui e as outras páginas carregam sozinhas';
+    estado.textContent = padrao;
     btn.hidden = true;
-    msg('');
+    msg(Sync.configurado ? 'Limpei só este computador. Os dados da nuvem continuam e voltam ao recarregar.' : '');
   });
+
+  salaEl.addEventListener('change', async () => {
+    Sync.setSala(salaEl.value);
+    salaEl.value = Sync.sala();
+    await Pasta.limpar();
+    card.classList.remove('ok');
+    estado.textContent = padrao;
+    btn.hidden = true;
+    iniciar();
+  });
+  nomeEl.addEventListener('change', () => Sync.setNome(nomeEl.value));
 });
 
 /* Página inicial: mostra se a sincronização está configurada */

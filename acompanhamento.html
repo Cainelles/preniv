@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Acompanhamento diário</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header class="topo">
@@ -60,17 +60,21 @@
             <option value="18">018</option><option value="19">019</option>
           </select>
         </label>
-        <label>Dia <select id="filtro-dia"></select></label>
+        <label>Adicionar CT <select id="add-ct"></select></label>
         <label>Situação
           <select id="filtro-sit">
             <option value="">Todas</option><option value="pend">Pendentes</option><option value="conf">Confirmadas</option>
           </select>
         </label>
+        <label class="check"><input type="checkbox" id="escopo" checked> Só meus CTs · áreas 014, 018, 019</label>
         <div class="acoes">
+          <button type="button" class="botao" id="gerar-excel-ac">Gerar Excel</button>
           <button type="button" class="botao" id="abrir-todas">Abrir todas</button>
           <button type="button" class="botao" id="fechar-todas">Fechar todas</button>
         </div>
       </div>
+      <div id="extras-ct" class="chips-ct"></div>
+      <p class="ajuda" id="escopo-info"></p>
       <div class="abas" role="tablist">
         <button type="button" class="aba ativa" data-aba="ordem">Por ordem</button>
         <button type="button" class="aba" data-aba="area">Por área</button>
@@ -81,10 +85,6 @@
   </div>
 </main>
 
-<datalist id="motivos">
-  <option value="Falta de material"><option value="Falta de pessoal"><option value="Aguardando liberação">
-  <option value="Prioridade alterada"><option value="Chuva / clima"><option value="Retrabalho"><option value="Outro">
-</datalist>
 
 <script src="xlsx.full.min.js"></script>
 <script>
@@ -92,7 +92,7 @@
     document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
   }
 </script>
-<script src="script.js?v=3"></script>
-<script src="acompanhamento.js?v=3"></script>
+<script src="script.js?v=5"></script>
+<script src="acompanhamento.js?v=5"></script>
 </body>
 </html>

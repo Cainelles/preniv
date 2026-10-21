@@ -7,6 +7,7 @@
   /* Filtros de centro: cts = CTs do grupo; areas = áreas aceitas; solda = SOLDADOR das mesmas ordens */
   const GRUPOS = [
     { id: 'MANDVAZA', cts: ['MANDVAZA'] },
+    { id: 'MANDDSC', cts: ['MANDDSC'] },
     { id: 'MANDTU UT', cts: ['MANDTU'], areas: ['19', '14'] },
     { id: 'MANDTU TE', cts: ['MANDTU'], areas: ['18', '14'] },
     { id: 'AUSETU UT', cts: ['AUSETU'], areas: ['19', '14'] },
@@ -18,7 +19,7 @@
     { id: 'AUSEDSC', cts: ['AUSEDSC'] }
   ];
 
-  const state = { dados: { atual: null, ordens: null }, tarefas: [], membros: new Map(), estado: {}, abertos: new Set(),
+  const state = { dados: { atual: null, ordens: null }, todas: [], extras: [], tarefas: [], membros: new Map(), estado: {}, abertos: new Set(),
                   aba: 'ordem', dias: [], grupoKeys: new Map(), semana: '' };
   const $ = (id) => document.getElementById(id);
   const txt = (v) => (v === null || v === undefined ? '' : String(v).trim());
@@ -79,7 +80,7 @@
       state.dados.ordens = fOrd ? await lerPlanilha(fOrd) : null;
       estado.textContent = `atual: ${state.dados.atual.length} linhas | ordens: ${state.dados.ordens ? state.dados.ordens.length + ' linhas' : 'não encontrada'}`;
       mostrarAviso('');
-      Pasta.salvar({ atual: state.dados.atual, ordens: state.dados.ordens }).catch(() => {});
+      Pasta.aplicar({ atual: state.dados.atual, ordens: state.dados.ordens }, false).catch((e) => mostrarAviso('Dados carregados, mas não enviei para a nuvem: ' + e.message));
       processar();
     } catch (e) { estado.textContent = 'Erro ao ler'; mostrarAviso('Erro ao carregar a pasta: ' + e.message); }
   }
@@ -103,20 +104,34 @@
         if (fim && (!t.fim || fim > t.fim)) t.fim = fim;
       }
     });
-    state.tarefas = [...mapa.values()];
-    state.tarefas.forEach((t) => { t.cods = codigosArea(t.area); });
+    state.todas = [...mapa.values()];
+    state.todas.forEach((t) => { t.cods = codigosArea(t.area); });
 
     /* semana mais frequente nas datas de início */
     const cont = new Map();
-    state.tarefas.forEach((t) => { if (t.ini) { const s = segundaDe(t.ini).getTime(); cont.set(s, (cont.get(s) || 0) + 1); } });
+    state.todas.forEach((t) => { if (t.ini) { const s = segundaDe(t.ini).getTime(); cont.set(s, (cont.get(s) || 0) + 1); } });
     const seg = cont.size ? new Date([...cont.entries()].sort((a, b) => b[1] - a[1])[0][0]) : segundaDe(new Date());
     state.semana = iso(seg);
     state.dias = Array.from({ length: 7 }, (_, i) => new Date(seg.getFullYear(), seg.getMonth(), seg.getDate() + i));
     $('semana').textContent = `Semana ${fmtData(state.dias[0])} a ${fmtData(state.dias[6])}`;
 
-    /* membros de cada filtro de centro */
+    $('inicio').hidden = true;
+    $('resultado').hidden = false;
+    $('sala').value = Sync.sala();
+    $('nome').value = Sync.nome();
+    conectar();
+    recalcular();
+  }
+
+  const gruposAtivos = () => GRUPOS.concat(state.extras.map((ct) => ({ id: ct, cts: [ctKey(ct)], extra: true })));
+
+  /* aplica o escopo (meus CTs + áreas 014/018/019) e remonta centros, extras e lista */
+  function recalcular() {
+    state.tarefas = $('escopo').checked
+      ? filtrarEscopo(state.todas, { ordem: (t) => numNorm(t.ordem), ct: (t) => t.ct, area: (t) => t.area }, state.extras)
+      : state.todas;
     state.membros = new Map();
-    GRUPOS.forEach((g) => {
+    gruposAtivos().forEach((g) => {
       const base = state.tarefas.filter((t) => g.cts.includes(ctKey(t.ct)) && (!g.areas || g.areas.some((a) => t.cods.includes(a))));
       const set = new Set(base.map((t) => t.k));
       if (g.solda) {
@@ -125,20 +140,13 @@
       }
       state.membros.set(g.id, set);
     });
-
-    $('filtro-centro').innerHTML = '<option value="">Todos</option>' + GRUPOS.map((g) => `<option>${esc(g.id)}</option>`).join('');
-    const hoje = new Date();
-    const hojeNaSemana = state.dias.some((d) => iso(d) === iso(hoje));
-    const nomesDia = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
-    $('filtro-dia').innerHTML = '<option value="">Semana toda</option>' +
-      state.dias.map((d, i) => `<option value="${iso(d)}">${nomesDia[i]} ${fmtData(d)}</option>`).join('');
-    $('filtro-dia').value = hojeNaSemana ? iso(hoje) : '';
-
-    $('inicio').hidden = true;
-    $('resultado').hidden = false;
-    $('sala').value = Sync.sala();
-    $('nome').value = Sync.nome();
-    conectar();
+    const centro = $('filtro-centro').value;
+    $('filtro-centro').innerHTML = '<option value="">Todos</option>' + gruposAtivos().map((g) => `<option>${esc(g.id)}</option>`).join('');
+    if (state.membros.has(centro)) $('filtro-centro').value = centro;
+    const cts = [...new Set(state.todas.map((t) => t.ct).filter(Boolean))].filter((c) => !state.extras.includes(c)).sort();
+    $('add-ct').innerHTML = '<option value="">＋ CT…</option>' + cts.map((c) => `<option>${esc(c)}</option>`).join('');
+    $('extras-ct').innerHTML = state.extras.map((c) => `<span class="chip">${esc(c)}<button type="button" data-rm-ct="${esc(c)}" title="Tirar">✕</button></span>`).join('');
+    $('escopo-info').textContent = $('escopo').checked ? `${state.tarefas.length} de ${state.todas.length} tarefas no escopo` : '';
     render();
   }
 
@@ -157,12 +165,10 @@
   function visiveis() {
     const busca = $('busca').value.trim().toLowerCase();
     const centro = $('filtro-centro').value; const area = $('filtro-area').value;
-    const dia = $('filtro-dia').value; const sit = $('filtro-sit').value;
-    const d = dia ? paraData(dia) : null;
+    const sit = $('filtro-sit').value;
     return state.tarefas.filter((t) => {
       if (centro && !state.membros.get(centro).has(t.k)) return false;
       if (area && !t.cods.includes(area)) return false;
-      if (d && t.ini && (d < t.ini || d > (t.fim || t.ini))) return false;
       if (sit === 'conf' && !confirmada(t.k)) return false;
       if (sit === 'pend' && confirmada(t.k)) return false;
       if (busca && !`${t.ordem} ${t.texto} ${t.ct}`.toLowerCase().includes(busca)) return false;
@@ -174,7 +180,7 @@
     return `<tr data-k="${esc(t.k)}"><td class="nowrap">${esc(t.ordem)}</td><td class="nowrap">${esc(t.op)}</td>` +
       `<td class="nowrap">${esc(t.sub)}</td><td class="nowrap">${esc(t.ct)}</td><td class="texto">${esc(t.texto)}</td>` +
       '<td><input class="campo" data-f="just" placeholder="Justificativa"></td>' +
-      '<td><input class="campo" data-f="motivo" list="motivos" placeholder="Motivo"></td>' +
+      '<td><input class="campo" data-f="motivo" placeholder="Motivo"></td>' +
       '<td class="nowrap"><button type="button" class="btn-conf" data-conf>CONFIRMADO</button><small class="quem"></small></td></tr>';
   }
 
@@ -189,7 +195,7 @@
     } else if (state.aba === 'area') {
       vis.forEach((t) => { const a = t.cods[0] ? t.cods[0].padStart(3, '0') : 'Sem área'; add('a' + a, a === 'Sem área' ? a : `Área ${a}`, '', t); });
     } else {
-      GRUPOS.forEach((g) => vis.forEach((t) => { if (state.membros.get(g.id).has(t.k)) add('c' + g.id, g.id, '', t); }));
+      gruposAtivos().forEach((g) => vis.forEach((t) => { if (state.membros.get(g.id).has(t.k)) add('c' + g.id, g.id, '', t); }));
     }
     state.grupoKeys = new Map();
     let html = '';
@@ -244,7 +250,53 @@
 
   /* ---------- Eventos ---------- */
   $('seletor-pasta').addEventListener('change', aoEscolherPasta);
-  ['busca', 'filtro-centro', 'filtro-area', 'filtro-dia', 'filtro-sit'].forEach((id) =>
+
+  /* escopo e CTs extras */
+  try { state.extras = JSON.parse(localStorage.getItem('acomp.ctsExtras')) || []; } catch (e) { state.extras = []; }
+  const salvarExtras = () => { try { localStorage.setItem('acomp.ctsExtras', JSON.stringify(state.extras)); } catch (e) { /* só nesta sessão */ } };
+  $('escopo').addEventListener('change', () => { if (state.todas.length) recalcular(); });
+  $('add-ct').addEventListener('change', () => {
+    const v = $('add-ct').value;
+    if (!v) return;
+    if (!state.extras.includes(v)) state.extras.push(v);
+    salvarExtras();
+    recalcular();
+  });
+  $('extras-ct').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-rm-ct]');
+    if (!b) return;
+    state.extras = state.extras.filter((c) => c !== b.dataset.rmCt);
+    salvarExtras();
+    recalcular();
+  });
+
+  /* Excel: tudo que está na tela (filtros atuais), o confirmado e o justificado */
+  function gerarExcel() {
+    if (typeof XLSX === 'undefined') { mostrarAviso('Biblioteca XLSX não carregou.'); return; }
+    const num = (a, b) => a.localeCompare(b, 'pt-BR', { numeric: true });
+    const vis = visiveis().sort((a, b) => num(a.ordem, b.ordem) || num(a.op, b.op) || num(a.sub, b.sub));
+    if (!vis.length) { mostrarAviso('Nada para exportar com esses filtros.'); return; }
+    mostrarAviso('');
+    const cab = ['Ordem', 'Operação', 'Sub', 'CT', 'Área', 'Texto breve', 'Justificativa', 'Motivo', 'Confirmado', 'Confirmado por', 'Hora'];
+    const lin = (t) => {
+      const e = info(t.k);
+      const ok = e.conf === true;
+      return [t.ordem, t.op, t.sub, t.ct, t.cods[0] ? t.cods[0].padStart(3, '0') : '', t.texto, e.just || '', e.motivo || '',
+        ok ? 'Sim' : 'Não', ok ? (e.por || '') : '', ok ? (e.em || '') : ''];
+    };
+    const aba = (ts) => {
+      const ws = XLSX.utils.aoa_to_sheet([cab].concat(ts.map(lin)));
+      ws['!cols'] = [10, 9, 6, 11, 7, 45, 40, 28, 11, 16, 8].map((wch) => ({ wch }));
+      return ws;
+    };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, aba(vis), 'Acompanhamento');
+    XLSX.utils.book_append_sheet(wb, aba(vis.filter((t) => confirmada(t.k))), 'Confirmadas');
+    XLSX.utils.book_append_sheet(wb, aba(vis.filter((t) => info(t.k).just || info(t.k).motivo)), 'Justificadas');
+    XLSX.writeFile(wb, `acompanhamento_${iso(new Date())}_${Sync.sala()}.xlsx`);
+  }
+  $('gerar-excel-ac').addEventListener('click', gerarExcel);
+  ['busca', 'filtro-centro', 'filtro-area', 'filtro-sit'].forEach((id) =>
     $(id).addEventListener(id === 'busca' ? 'input' : 'change', render));
 
   document.querySelector('.abas').addEventListener('click', (ev) => {
@@ -304,11 +356,11 @@
   });
 
   /* carrega sozinho a pasta escolhida na página inicial */
-  Pasta.ler().then((p) => {
-    if (!p || !p.dados.atual) return;
+  Pasta.carregar((p) => {
+    if (!p.dados.atual) return;
     state.dados.atual = p.dados.atual;
     state.dados.ordens = p.dados.ordens;
-    $('card-pasta').querySelector('[data-estado]').textContent = `Pasta carregada ${Pasta.rotulo(p.quando)}. Clique para escolher outra.`;
+    $('card-pasta').querySelector('[data-estado]').textContent = `${Pasta.descricao(p)}. Clique para escolher outra pasta.`;
     processar();
-  });
+  }, mostrarAviso);
 })();
