@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gestão de carteira</title>
   <link rel="stylesheet" href="style.css?v=6">
-  <link rel="stylesheet" href="carteira.css?v=1">
+  <link rel="stylesheet" href="carteira.css?v=4">
 </head>
 <body>
 
@@ -33,7 +33,7 @@
   </form>
 </div>
 
-<!-- ===== Aplicação ===== -->
+<!-- ===== Cabeçalho ===== -->
 <header class="topo">
   <div class="topo-conteudo">
     <div class="marca-bloco">
@@ -44,7 +44,7 @@
       </div>
     </div>
     <div class="topo-direita">
-      <a class="voltar" href="index.html">Início</a>
+      <a class="voltar" href="index.html">Início do site</a>
       <span id="usuario" class="chip-status" hidden></span>
       <button type="button" id="sair" class="voltar sair" hidden>Sair</button>
     </div>
@@ -52,68 +52,159 @@
 </header>
 
 <main id="app" hidden>
-  <section class="painel">
-    <div class="linha-campos">
-      <label class="arquivo" id="card-pasta">
-        <span class="arquivo-info">
-          <span class="arquivo-nome">Selecionar pasta</span>
-          <span class="arquivo-estado" data-estado>Precisa do opcart.xlsx e do omcart.xlsx</span>
-        </span>
-        <input type="file" id="seletor-pasta" webkitdirectory directory multiple>
-      </label>
-      <p class="ajuda">As planilhas chegam sozinhas da nuvem. Escolher a pasta aqui é opcional e atualiza para todos.</p>
-    </div>
-    <p id="aviso" class="aviso" role="alert" hidden></p>
-  </section>
+  <p id="aviso" class="aviso" role="alert" hidden></p>
 
-  <section id="inicio" class="inicio">
-    <p class="inicio-titulo">Nada para mostrar ainda</p>
-    <p>Escolha a pasta que contém opcart e omcart.</p>
-  </section>
-
-  <div id="resultado" hidden>
-    <section class="painel">
-      <div class="resumo" id="resumo"></div>
-
-      <div class="filtros">
-        <label>Busca
-          <input type="search" id="busca" placeholder="Ordem, nota ou texto">
-        </label>
-        <label>Área
-          <select id="filtro-area">
-            <option value="">Todas</option>
-            <option value="14">014</option>
-            <option value="18">018</option>
-            <option value="19">019</option>
-            <option value="ct">Só pelo CT (outra área)</option>
-          </select>
-        </label>
-        <label>Centro de trabalho
-          <select id="filtro-ct"><option value="">Todos</option></select>
-        </label>
-        <label>Status do sistema
-          <select id="filtro-st"><option value="">Todos</option></select>
-        </label>
-        <label>Ordenar por
-          <select id="ordenar">
-            <option value="ordem">Número da ordem</option>
-            <option value="inicio">Início base</option>
-          </select>
-        </label>
-        <label class="check">
-          <input type="checkbox" id="escopo" checked> Só áreas 014, 018, 019 e meus CTs
-        </label>
-        <div class="acoes">
-          <button type="button" class="botao" id="copiar-oms">Copiar OMs</button>
-          <button type="button" class="botao" id="gerar-excel">Gerar Excel</button>
-          <button type="button" class="botao" id="abrir-todas">Abrir todas</button>
-          <button type="button" class="botao" id="fechar-todas">Fechar todas</button>
-        </div>
-      </div>
-      <p class="ajuda" id="escopo-info"></p>
+  <!-- ================= TELA: INÍCIO DA CARTEIRA ================= -->
+  <div id="tela-inicio" class="tela">
+    <section class="hero">
+      <h2>O que você quer ver na carteira?</h2>
+      <p>Escolha um tema. Os números mostram quanto há em cada um com as planilhas carregadas.</p>
     </section>
 
-    <div id="lista"></div>
+    <section class="painel">
+      <div class="linha-campos">
+        <label class="arquivo" id="card-pasta">
+          <span class="arquivo-info">
+            <span class="arquivo-nome">Selecionar pasta</span>
+            <span class="arquivo-estado" data-estado>Precisa do opcart.xlsx e do omcart.xlsx</span>
+          </span>
+          <input type="file" id="seletor-pasta" webkitdirectory directory multiple>
+        </label>
+        <label class="check">
+          <input type="checkbox" class="chk-escopo" checked> Só áreas 014, 018, 019 e meus CTs
+        </label>
+      </div>
+      <p class="ajuda">As planilhas chegam sozinhas da nuvem. Escolher a pasta aqui é opcional e atualiza para todos.</p>
+    </section>
+
+    <div id="cartoes"></div>
+  </div>
+
+  <!-- ================= TELA: ORDENS (todas e filtros de ordens) ================= -->
+  <div id="tela-ordens" class="tela" hidden>
+    <div class="tela-cab">
+      <a class="voltar-carteira" href="#">← Carteira</a>
+      <div>
+        <h2 id="ordens-titulo"></h2>
+        <p class="ajuda" id="ordens-desc"></p>
+      </div>
+    </div>
+
+    <section id="ordens-vazio" class="inicio" hidden>
+      <p class="inicio-titulo">Nada para mostrar ainda</p>
+      <p>Volte ao <a href="#">início da carteira</a> e escolha a pasta com opcart e omcart.</p>
+    </section>
+
+    <div id="ordens-conteudo" hidden>
+      <section class="painel">
+        <div class="resumo" id="resumo"></div>
+        <div class="filtros">
+          <label>Busca
+            <input type="search" id="busca" placeholder="Ordem, nota ou texto">
+          </label>
+          <label>Área
+            <select id="filtro-area">
+              <option value="">Todas</option>
+              <option value="14">014</option>
+              <option value="18">018</option>
+              <option value="19">019</option>
+              <option value="ct">Só pelo CT (outra área)</option>
+            </select>
+          </label>
+          <label>Centro de trabalho
+            <select id="filtro-ct"><option value="">Todos</option></select>
+          </label>
+          <label>Status do sistema
+            <select id="filtro-st"><option value="">Todos</option></select>
+          </label>
+          <label>Ordenar por
+            <select id="ordenar">
+              <option value="ordem">Número da ordem</option>
+              <option value="inicio">Início base</option>
+            </select>
+          </label>
+          <label class="check">
+            <input type="checkbox" class="chk-escopo" checked> Só áreas 014, 018, 019 e meus CTs
+          </label>
+          <div class="acoes">
+            <button type="button" class="botao" id="copiar-oms">Copiar OMs</button>
+            <button type="button" class="botao" id="gerar-excel">Gerar Excel</button>
+            <button type="button" class="botao" id="abrir-todas">Abrir todas</button>
+            <button type="button" class="botao" id="fechar-todas">Fechar todas</button>
+          </div>
+        </div>
+        <p class="ajuda" id="diag-cod" hidden></p>
+        <p class="ajuda" id="escopo-info"></p>
+      </section>
+      <div id="lista"></div>
+    </div>
+  </div>
+
+  <!-- ================= TELA: ATREs (tarefas) ================= -->
+  <div id="tela-atre" class="tela" hidden>
+    <div class="tela-cab">
+      <a class="voltar-carteira" href="#">← Carteira</a>
+      <div>
+        <h2>ATREs</h2>
+        <p class="ajuda">Tarefas com ATRE incorreta para o CT e tarefas que deveriam ter ATRE e estão sem. ATREs monitoradas: CA01, CO01, CO02, CO03 e CO04.</p>
+      </div>
+    </div>
+
+    <section id="atre-vazio" class="inicio" hidden>
+      <p class="inicio-titulo">Nada para mostrar ainda</p>
+      <p>Volte ao <a href="#">início da carteira</a> e escolha a pasta com opcart e omcart.</p>
+    </section>
+
+    <div id="atre-conteudo" hidden>
+      <section class="painel">
+        <div class="resumo" id="atre-resumo"></div>
+        <div class="filtros">
+          <label>Busca
+            <input type="search" id="a-busca" placeholder="Ordem ou texto da tarefa">
+          </label>
+          <label>ATRE
+            <select id="a-atre"></select>
+          </label>
+          <label>Situação
+            <select id="a-sit">
+              <option value="problema" selected>Com problema</option>
+              <option value="">Todas</option>
+              <option value="incorreta">ATRE incorreta</option>
+              <option value="falta">Faltando ATRE</option>
+              <option value="conferir">A conferir</option>
+              <option value="ok">Adequadas</option>
+            </select>
+          </label>
+          <label>Centro de trabalho
+            <select id="a-ct"><option value="">Todos</option></select>
+          </label>
+          <label class="check">
+            <input type="checkbox" class="chk-escopo" checked> Só áreas 014, 018, 019 e meus CTs
+          </label>
+          <div class="acoes">
+            <button type="button" class="botao" id="a-copiar">Copiar OMs</button>
+            <button type="button" class="botao" id="a-excel">Gerar Excel</button>
+            <button type="button" class="botao" id="a-abrir">Abrir todas</button>
+            <button type="button" class="botao" id="a-fechar">Fechar todas</button>
+          </div>
+        </div>
+
+        <details class="legenda-sit">
+          <summary>Como a situação é definida</summary>
+          <ul>
+            <li><strong>ATRE incorreta:</strong> o texto da tarefa cita uma ATRE, mas o CT da tarefa não é um dos permitidos para ela.</li>
+            <li><strong>Faltando ATRE:</strong> o CT é permitido e a tarefa deveria ter a ATRE, mas não cita o código.</li>
+            <li><strong>A conferir:</strong> cita a ATRE e o CT está certo, mas o texto não confirma o serviço.</li>
+            <li><strong>Adequada:</strong> cita a ATRE, o CT está certo e o texto confere.</li>
+          </ul>
+          <p>CTs permitidos: CA01 = CALD*, CO01 = MAND*, CO02 = ISOLADOR, CO03 = AUSE*, CO04 = PINTJCHT, PINTJATQ, PINTJATO e PINTLETRI.
+          Em CO02 e CO04, toda tarefa do CT deve ter a ATRE; nas demais, só as que o texto indica o serviço.
+          Tudo isso se ajusta no arquivo <code>atres.js</code>.</p>
+        </details>
+        <p class="ajuda" id="atre-info"></p>
+      </section>
+      <div id="atre-lista"></div>
+    </div>
   </div>
 </main>
 
@@ -124,6 +215,7 @@
   }
 </script>
 <script src="script.js?v=7"></script>
-<script src="carteira.js?v=1"></script>
+<script src="atres.js?v=2"></script>
+<script src="carteira.js?v=4"></script>
 </body>
 </html>

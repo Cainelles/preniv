@@ -106,6 +106,37 @@
 tr.meu td { background: rgba(31, 94, 255, .07); }
 .selo.ct { background: rgba(31, 94, 255, .12); color: var(--pri); border-color: var(--pri); }
 
+/* ---------- Telas e navegação ---------- */
+.tela-cab { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.tela-cab h2 { margin: 0 0 2px; font-size: 1.4rem; }
+.tela-cab .ajuda { margin: 0; }
+.voltar-carteira {
+  flex: none; padding: 6px 14px; border: 1px solid var(--bd); border-radius: 99px;
+  color: var(--pri); text-decoration: none; background: var(--card); font-weight: 600;
+}
+.voltar-carteira:hover { border-color: var(--pri); }
+.home-sec { margin: 26px 0 12px; font-size: .8rem; letter-spacing: .05em; text-transform: uppercase; color: var(--mut); }
+.cartao-rodape { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.cartao-rodape .cartao-seta { margin-top: 0; }
+.cartao-qtd { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--txt); }
+#tela-inicio .painel .linha-campos { align-items: center; }
+
+/* ---------- ATREs ---------- */
+.legenda-sit { margin-top: 12px; font-size: .88rem; color: var(--mut); }
+.legenda-sit summary { cursor: pointer; color: var(--pri); }
+.legenda-sit ul { margin: 8px 0; padding-left: 20px; }
+.legenda-sit code { background: var(--bg); padding: 1px 6px; border-radius: 4px; }
+.atre-ref { margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--bd); border-radius: 10px; background: var(--bg); font-size: .9rem; }
+.atre-ref p { margin: 0 0 8px; }
+.atre-ref ul { margin: 4px 0 0; padding-left: 20px; color: var(--mut); }
+.atre-nota { margin: 0 0 12px; color: var(--mut); }
+.sit { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--bd); white-space: nowrap; }
+.sit-ok { background: rgba(31,157,87,.15); color: var(--ok); border-color: var(--ok); }
+.sit-incorreta { background: rgba(214,69,69,.12); color: var(--err); border-color: var(--err); }
+.sit-conferir, .sit-falta { background: rgba(217,138,0,.15); color: var(--warn); border-color: var(--warn); }
+.chip.sit-ok, .chip.sit-diverge, .chip.sit-conferir, .chip.sit-falta, .chip.obs { font-size: .85rem; }
+.mais-linhas { margin: 10px 0 0; }
+
 /* ---------- Celular ---------- */
 @media (max-width: 640px) {
   .login { align-items: start; }
